@@ -1231,39 +1231,49 @@ def display_10th_exam():
                         "Chapter 8: Novels, Society and History": (159, 180)
                     },
                     "NCERT-Class-10-Political-Science.pdf": {
-                        "Chapter 1: Power Sharing": (3, 14),
-                        "Chapter 2: Federalism": (15, 30),
-                        "Chapter 3: Democracy and Diversity": (31, 40),
-                        "Chapter 4: Gender, Religion and Caste": (41, 58),
-                        "Chapter 5: Popular Struggles and Movements": (59, 72),
-                        "Chapter 6: Political Parties": (73, 90),
-                        "Chapter 7: Outcomes of Democracy": (91, 100),
-                        "Chapter 8: Challenges to Democracy": (101, 114)
+                        "Chapter 1: Power Sharing": (1, 12),
+                        "Chapter 2: Federalism": (13, 28),
+                        "Chapter 3: Democracy and Diversity": (29, 38),
+                        "Chapter 4: Gender, Religion and Caste": (39, 56),
+                        "Chapter 5: Popular Struggles and Movements": (57, 70),
+                        "Chapter 6: Political Parties": (71, 88),
+                        "Chapter 7: Outcomes of Democracy": (89, 98),
+                        "Chapter 8: Challenges to Democracy": (99, 112)
                     },
                     "NCERT-Class-10-Economics.pdf": {
-                        "Chapter 1: Development": (4, 19),
-                        "Chapter 2: Sectors of the Indian Economy": (20, 39),
-                        "Chapter 3: Money and Credit": (40, 55),
-                        "Chapter 4: Globalisation and the Indian Economy": (56, 75),
-                        "Chapter 5: Consumer Rights": (76, 96)
+                        "Chapter 1: Development": (2, 17),
+                        "Chapter 2: Sectors of the Indian Economy": (18, 37),
+                        "Chapter 3: Money and Credit": (38, 53),
+                        "Chapter 4: Globalisation and the Indian Economy": (54, 73),
+                        "Chapter 5: Consumer Rights": (74, 94)
                     },
                     "NCERT-Class-10-Geography.pdf": {
-                        "Chapter 1: Resources and Development": (3, 15),
-                        "Chapter 2: Forest and Wildlife Resources": (16, 24),
-                        "Chapter 3: Water Resources": (25, 35),
-                        "Chapter 4: Agriculture": (36, 51),
-                        "Chapter 5: Minerals and Energy Resources": (52, 65),
-                        "Chapter 6: Manufacturing Industries": (66, 81),
-                        "Chapter 7: Lifelines of National Economy": (82, 97)
+                        "Chapter 1: Resources and Development": (1, 13),
+                        "Chapter 2: Forest and Wildlife Resources": (14, 22),
+                        "Chapter 3: Water Resources": (23, 33),
+                        "Chapter 4: Agriculture": (34, 49),
+                        "Chapter 5: Minerals and Energy Resources": (50, 63),
+                        "Chapter 6: Manufacturing Industries": (64, 79),
+                        "Chapter 7: Lifelines of National Economy": (80, 95)
                     }
+                }
+                
+                book_offsets = {
+                    "NCERT-Class-10-History.pdf": 0,
+                    "NCERT-Class-10-Political-Science.pdf": 2,
+                    "NCERT-Class-10-Economics.pdf": 2,
+                    "NCERT-Class-10-Geography.pdf": 2
                 }
                 
                 st.markdown("<h3>Select Chapter</h3>", unsafe_allow_html=True)
                 available_chapters = list(sst_chapters[selected_pdf_filename].keys())
                 selected_chapter = st.selectbox("Chapter:", available_chapters)
                 
-                start_page, end_page = sst_chapters[selected_pdf_filename][selected_chapter]
-                st.info(f"This will extract text from pages {start_page} to {end_page} of {book_name}.")
+                index_start, index_end = sst_chapters[selected_pdf_filename][selected_chapter]
+                pdf_start = index_start + book_offsets.get(selected_pdf_filename, 0)
+                pdf_end = index_end + book_offsets.get(selected_pdf_filename, 0)
+                
+                st.info(f"**Index Pages:** {index_start} to {index_end}  \n**Mapped PDF Pages:** {pdf_start} to {pdf_end}")
                 
                 st.markdown("<h3>Quiz Settings</h3>", unsafe_allow_html=True)
                 total_q = st.number_input("Total Questions", min_value=1, max_value=50, value=20, key="sst_total")
@@ -1277,12 +1287,16 @@ def display_10th_exam():
                             pdf_text = ""
                             used_files = []
                             if os.path.exists(pdf_path):
-                                text = extract_text_from_pdf(pdf_path, start_page=start_page, end_page=end_page)
+                                text = extract_text_from_pdf(pdf_path, start_page=pdf_start, end_page=pdf_end)
                                 if text:
                                     if len(text) > 12000:
                                         text = text[:12000] + "\n...[truncated]"
                                     pdf_text = text
-                                    used_files.append(f"{selected_pdf_filename} (Pages {start_page}-{end_page})")
+                                    used_files.append(f"{selected_pdf_filename} (Index Pages {index_start}-{index_end})")
+                                    
+                                    # Verify heading by showing the first 150 characters
+                                    preview_snippet = text[:150].replace('\n', ' ')
+                                    st.success(f"**Verified Chapter Heading:** {preview_snippet}...")
                             else:
                                 st.error(f"File {selected_pdf_filename} not found in {sst_dir}.")
                                 
