@@ -597,6 +597,16 @@ def display_quiz_questions():
                 st.session_state.current_question_index += 1
                 st.rerun()
 
+    st.divider()
+    if st.button(" Cancel Quiz & Go Back", use_container_width=True, type="secondary"):
+        st.session_state.quiz_generated = False
+        st.session_state.mcqs = []
+        st.session_state.user_answers = {}
+        st.session_state.quiz_submitted = False
+        st.session_state.current_question_index = 0
+        st.session_state.quiz_format = None
+        st.rerun()
+
 
 def display_quiz_list_format():
     """Display all quiz questions in list format with instant feedback"""
@@ -691,13 +701,24 @@ def display_quiz_list_format():
         st.divider()
     
     # Submit button
-    if st.button(" Submit Quiz & See Final Score", use_container_width=True):
-        if len(st.session_state.answered_questions) == len(st.session_state.mcqs):
-            st.session_state.quiz_submitted = True
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button(" Cancel Quiz & Go Back", use_container_width=True, type="secondary"):
+            st.session_state.quiz_generated = False
+            st.session_state.mcqs = []
+            st.session_state.user_answers = {}
+            st.session_state.quiz_submitted = False
+            st.session_state.current_question_index = 0
+            st.session_state.quiz_format = None
             st.rerun()
-        else:
-            remaining = len(st.session_state.mcqs) - len(st.session_state.answered_questions)
-            st.warning(f"∩╕ Please check all answers first! {remaining} questions remaining.")
+    with col2:
+        if st.button(" Submit Quiz & See Final Score", use_container_width=True, type="primary"):
+            if len(st.session_state.answered_questions) == len(st.session_state.mcqs):
+                st.session_state.quiz_submitted = True
+                st.rerun()
+            else:
+                remaining = len(st.session_state.mcqs) - len(st.session_state.answered_questions)
+                st.warning(f"∩╕ Please check all answers first! {remaining} questions remaining.")
 
 
 def display_results():
@@ -841,12 +862,24 @@ def display_results():
         st.rerun()
 
 
-def display_saved_tests():
+def display_saved_tests(exam_type="all"):
     """Display saved test history"""
     st.markdown("<h2> Saved Tests</h2>", unsafe_allow_html=True)
     
-    tests = load_saved_tests()
-    
+    all_tests = load_saved_tests()
+    tests = []
+    for test in all_tests:
+        topic = test.get("topic", "")
+        # Identify 10th grade tests via topic name
+        is_10th = "10th Syllabus" in topic or "10th Grade" in topic or "Marathi" in topic
+        
+        if exam_type == "10th" and is_10th:
+            tests.append(test)
+        elif exam_type == "cdf" and not is_10th:
+            tests.append(test)
+        elif exam_type == "all":
+            tests.append(test)
+            
     if not tests:
         st.markdown("""
             <div class='result-box'>
@@ -1255,7 +1288,7 @@ def display_10th_exam():
                             st.error(f"Error generating quiz: {str(e)}")
 
     with sub_tab_saved:
-        display_saved_tests()
+        display_saved_tests(exam_type="10th")
 
 def main():
     """Main application logic"""
@@ -1731,7 +1764,7 @@ def main():
 
         # ÇÇ SUB-TAB: Saved Tests ÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇ
         with sub_tab_saved:
-            display_saved_tests()
+            display_saved_tests(exam_type="cdf")
 
     # ÇÇ PAGE: ENGLISH IMPROVEMENT ÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇ
     elif top_menu == " English Improvement Games":
