@@ -1207,6 +1207,123 @@ def display_10th_exam():
                         except Exception as e:
                             st.error(f"Error extracting text from files: {str(e)}")
 
+            elif selected_subject == "SST":
+                st.markdown("<h3>Select SST Textbook</h3>", unsafe_allow_html=True)
+                sst_books = {
+                    "History (India and the Contemporary World-II)": "NCERT-Class-10-History.pdf",
+                    "Geography (Contemporary India-II)": "NCERT-Class-10-Geography.pdf",
+                    "Political Science (Democratic Politics-II)": "NCERT-Class-10-Political-Science.pdf",
+                    "Economics (Understanding Economic Development)": "NCERT-Class-10-Economics.pdf"
+                }
+                book_name = st.selectbox("Select Textbook:", list(sst_books.keys()))
+                selected_pdf_filename = sst_books[book_name]
+                
+                # Pre-calculated chapter page ranges based on NCERT TOCs
+                sst_chapters = {
+                    "NCERT-Class-10-History.pdf": {
+                        "Chapter 1: The Rise of Nationalism in Europe": (3, 24),
+                        "Chapter 2: The Nationalist Movement in Indo-China": (25, 48),
+                        "Chapter 3: Nationalism in India": (49, 76),
+                        "Chapter 4: The Making of a Global World": (77, 96),
+                        "Chapter 5: The Age of Industrialisation": (97, 116),
+                        "Chapter 6: Work, Life and Leisure": (117, 140),
+                        "Chapter 7: Print Culture and the Modern World": (141, 158),
+                        "Chapter 8: Novels, Society and History": (159, 180)
+                    },
+                    "NCERT-Class-10-Political-Science.pdf": {
+                        "Chapter 1: Power Sharing": (1, 12),
+                        "Chapter 2: Federalism": (13, 28),
+                        "Chapter 3: Democracy and Diversity": (29, 38),
+                        "Chapter 4: Gender, Religion and Caste": (39, 56),
+                        "Chapter 5: Popular Struggles and Movements": (57, 70),
+                        "Chapter 6: Political Parties": (71, 88),
+                        "Chapter 7: Outcomes of Democracy": (89, 98),
+                        "Chapter 8: Challenges to Democracy": (99, 112)
+                    },
+                    "NCERT-Class-10-Economics.pdf": {
+                        "Chapter 1: Development": (2, 17),
+                        "Chapter 2: Sectors of the Indian Economy": (18, 37),
+                        "Chapter 3: Money and Credit": (38, 53),
+                        "Chapter 4: Globalisation and the Indian Economy": (54, 73),
+                        "Chapter 5: Consumer Rights": (74, 94)
+                    },
+                    "NCERT-Class-10-Geography.pdf": {
+                        "Chapter 1: Resources and Development": (1, 13),
+                        "Chapter 2: Forest and Wildlife Resources": (14, 22),
+                        "Chapter 3: Water Resources": (23, 33),
+                        "Chapter 4: Agriculture": (34, 49),
+                        "Chapter 5: Minerals and Energy Resources": (50, 63),
+                        "Chapter 6: Manufacturing Industries": (64, 79),
+                        "Chapter 7: Lifelines of National Economy": (80, 95)
+                    }
+                }
+                
+                st.markdown("<h3>Select Chapter</h3>", unsafe_allow_html=True)
+                available_chapters = list(sst_chapters[selected_pdf_filename].keys())
+                selected_chapter = st.selectbox("Chapter:", available_chapters)
+                
+                start_page, end_page = sst_chapters[selected_pdf_filename][selected_chapter]
+                st.info(f"This will extract text from pages {start_page} to {end_page} of {book_name}.")
+                
+                st.markdown("<h3>Quiz Settings</h3>", unsafe_allow_html=True)
+                total_q = st.number_input("Total Questions", min_value=1, max_value=50, value=20, key="sst_total")
+                
+                if st.button(f"Generate {total_q}-Question SST Exam", use_container_width=True, type="primary"):
+                    with st.spinner(f"Extracting {selected_chapter} and generating quiz..."):
+                        try:
+                            sst_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "10thBooks", "SST")
+                            pdf_path = os.path.join(sst_dir, selected_pdf_filename)
+                            
+                            pdf_text = ""
+                            used_files = []
+                            if os.path.exists(pdf_path):
+                                text = extract_text_from_pdf(pdf_path, start_page=start_page, end_page=end_page)
+                                if text:
+                                    if len(text) > 4000:
+                                        text = text[:4000] + "\n...[truncated]"
+                                    pdf_text = text
+                                    used_files.append(f"{selected_pdf_filename} (Pages {start_page}-{end_page})")
+                            else:
+                                st.error(f"File {selected_pdf_filename} not found in {sst_dir}.")
+                                
+                            if not pdf_text:
+                                st.error("No text could be extracted from those pages.")
+                            else:
+                                difficulty_context = "Subject: Social Studies (SST) for 10th Grade CBSE/NCERT. The questions should match the difficulty level of a standard 10th Grade Board Exam."
+                                level = "10th Grade Student / High School Student"
+                                final_topic = f"SST 10th Grade - {book_name} (Pages {start_page}-{end_page})"
+                                
+                                mcqs_result = generate_full_quiz(
+                                    pdf_text=pdf_text,
+                                    topic=final_topic,
+                                    level=level,
+                                    pdf_count=total_q,
+                                    prompt_count=0,
+                                    internet_count=0,
+                                    difficulty_context=difficulty_context,
+                                    prompt_level=level,
+                                    prompt2_level=level,
+                                )
+                                st.session_state.mcqs = mcqs_result
+                                
+                                if not st.session_state.mcqs:
+                                    st.error("AI returned 0 questions! It might have failed to read the text. Check console.")
+                                else:
+                                    st.session_state.quiz_generated = True
+                                    st.session_state.user_answers = {}
+                                    st.session_state.quiz_submitted = False
+                                    st.session_state.current_question_index = 0
+                                    st.session_state.quiz_format = None
+                                    st.session_state.test_saved = False
+                                    st.session_state.current_topic = final_topic
+                                    st.session_state.pdf_files_used = used_files
+                                    st.session_state.answered_questions = set()
+                                    
+                                    st.success(f"SST Exam generated successfully! ({len(st.session_state.mcqs)} questions)")
+                                    st.rerun()
+                        except Exception as e:
+                            st.error(f"Error generating quiz: {str(e)}")
+
             else:
                 st.markdown("<h3>Specific Topic (Optional)</h3>", unsafe_allow_html=True)
                 specific_topic = st.text_input("Enter a specific chapter or topic (e.g., 'Quadratic Equations', 'Chemical Reactions'):", "")
