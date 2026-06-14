@@ -411,11 +411,42 @@ if "default_tab_index" not in st.session_state:
 def display_header():
     """Display the app header with title and total stars"""
     
-    top_col1, top_col2, top_col3 = st.columns([5, 1, 1.5])
-    with top_col3:
-        if st.button("📱 Install App", use_container_width=True):
-            st.session_state.show_install_popup = True
-            st.rerun()
+    install_html = """
+    <style>
+    @media all and (display-mode: standalone) {
+        .install-wrapper { display: none !important; }
+    }
+    .install-btn {
+        background: #f0f2f6; border: 1px solid #e0e0e0; color: #31333F; padding: 4px 12px; border-radius: 20px; 
+        cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;
+    }
+    .install-btn:hover { background: #e0e2e6; }
+    .install-modal {
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: white; padding: 20px; border-radius: 15px; z-index: 9999999;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 85%; max-width: 320px; font-family: 'Outfit', sans-serif;
+    }
+    .install-overlay {
+        display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 9999998; backdrop-filter: blur(2px);
+    }
+    </style>
+    
+    <div class="install-wrapper" style="display:flex; justify-content:flex-start; margin-bottom:-20px; position:relative; z-index:10;">
+        <button class="install-btn" onclick="document.getElementById('inst-mod').style.display='block'; document.getElementById('inst-over').style.display='block';">📱 Install App</button>
+    </div>
+    
+    <div id="inst-over" class="install-overlay" onclick="document.getElementById('inst-mod').style.display='none'; this.style.display='none';"></div>
+    <div id="inst-mod" class="install-modal">
+        <h3 style="margin-top:0;">📱 Get BrainyBee!</h3>
+        <p style="margin-bottom:5px;"><b>iPhone (Safari):</b></p>
+        <p style="margin-top:0; font-size:14px;">1. Tap the Share square with arrow.<br>2. Tap 'Add to Home Screen'.</p>
+        <p style="margin-bottom:5px;"><b>Android (Chrome):</b></p>
+        <p style="margin-top:0; font-size:14px;">1. Tap Menu (three dots).<br>2. Tap 'Install app'.</p>
+        <button style="width:100%; padding:10px; margin-top:10px; border-radius:8px; border:none; background:#ff4b4b; color:white; font-weight:bold; cursor:pointer;" onclick="document.getElementById('inst-mod').style.display='none'; document.getElementById('inst-over').style.display='none';">Got it!</button>
+    </div>
+    """
+    st.markdown(install_html, unsafe_allow_html=True)
 
     # Use GitHub Raw URL to absolutely guarantee it loads correctly on Streamlit Cloud
     img_url = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/smiling_pointing_bee_transparent.png"
@@ -1501,29 +1532,6 @@ def main():
         return
 
     display_header()
-    
-    @st.dialog("📱 Install BrainyBee App")
-    def install_popup():
-        st.markdown("""
-        **Get BrainyBee on your home screen for the best experience!**
-        
-        **📱 iPhone/iPad (Safari)**
-        1. Tap the **Share** square with an arrow at the bottom.
-        2. Scroll down and tap **Add to Home Screen**.
-        
-        **🤖 Android (Chrome)**
-        1. Tap the **Menu** (three dots) at the top right.
-        2. Tap **Add to Home screen** or **Install app**.
-        """)
-        if st.button("Close", use_container_width=True):
-            st.session_state.show_install_popup = False
-            st.rerun()
-
-    if 'show_install_popup' not in st.session_state:
-        st.session_state.show_install_popup = True
-
-    if st.session_state.show_install_popup:
-        install_popup()
     
     # Sidebar for API key check and info
     with st.sidebar:
