@@ -410,17 +410,23 @@ if "default_tab_index" not in st.session_state:
 
 def display_header():
     """Display the app header with title and total stars"""
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        if os.path.exists("assets/cartoon.png"):
-            st.image("assets/cartoon.png", width=120)
-    with col2:
-        st.markdown("""
-            <div class="logo-container" style="justify-content: flex-start;">
-                <div class="logo-text">BrainyBee</div>
-                <div class="logo-subtext">Kids Learning</div>
+    import base64
+    try:
+        with open("assets/cartoon.png", "rb") as f:
+            img_b64 = base64.b64encode(f.read()).decode()
+        img_html = f'<img src="data:image/png;base64,{img_b64}" width="110" style="margin-right: 15px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">'
+    except:
+        img_html = ""
+
+    st.markdown(f"""
+        <div class="logo-container" style="justify-content: center; align-items: center; display: flex; margin-bottom: 1rem;">
+            {img_html}
+            <div style="display: flex; flex-direction: column; justify-content: center;">
+                <div class="logo-text" style="line-height: 1.1;">BrainyBee</div>
+                <div class="logo-subtext" style="margin-top: 0;">Kids Learning</div>
             </div>
-        """, unsafe_allow_html=True)
+        </div>
+    """, unsafe_allow_html=True)
     
     if st.session_state.user:
         col1, col2, col3 = st.columns([1,3,1])
