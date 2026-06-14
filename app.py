@@ -438,14 +438,6 @@ def display_header():
     
     install_html = f"""
     <style>
-    @media all and (display-mode: standalone) {{
-        .install-wrapper {{ display: none !important; }}
-    }}
-    .install-btn {{
-        background: #f0f2f6; border: 1px solid #e0e0e0; color: #31333F; padding: 4px 12px; border-radius: 20px; 
-        cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;
-    }}
-    .install-btn:hover {{ background: #e0e2e6; }}
     .install-modal {{
         display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
         background: white; padding: 20px; border-radius: 15px; z-index: 9999999;
@@ -457,10 +449,6 @@ def display_header():
     }}
     </style>
     
-    <div class="install-wrapper" style="display:flex; justify-content:flex-start; margin-bottom:-20px; position:relative; z-index:10;">
-        <button class="install-btn" onclick="document.getElementById('inst-mod').style.display='block'; document.getElementById('inst-over').style.display='block';">📱 Install App</button>
-    </div>
-    
     <div id="inst-over" class="install-overlay" onclick="document.getElementById('inst-mod').style.display='none'; this.style.display='none';"></div>
     <div id="inst-mod" class="install-modal">
         <h3 style="margin-top:0;">📱 Get BrainyBee!</h3>
@@ -470,6 +458,17 @@ def display_header():
         <p style="margin-top:0; font-size:14px;">1. Tap Menu (three dots).<br>2. Tap 'Install app'.</p>
         <button style="width:100%; padding:10px; margin-top:10px; border-radius:8px; border:none; background:#ff4b4b; color:white; font-weight:bold; cursor:pointer;" onclick="document.getElementById('inst-mod').style.display='none'; document.getElementById('inst-over').style.display='none';">Got it!</button>
     </div>
+    
+    <script>
+        // Check if app is NOT installed and we haven't shown popup in this session
+        if (!window.matchMedia('(display-mode: standalone)').matches && !sessionStorage.getItem('installPopupShown')) {{
+            // Show popup
+            document.getElementById('inst-mod').style.display='block';
+            document.getElementById('inst-over').style.display='block';
+            // Mark as shown for this browser session
+            sessionStorage.setItem('installPopupShown', 'true');
+        }}
+    </script>
     """
     st.markdown(install_html, unsafe_allow_html=True)
 
