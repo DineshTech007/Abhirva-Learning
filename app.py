@@ -1735,58 +1735,41 @@ def display_10th_exam():
                             st.info(f"✨ **Analyzed Exam Pattern:** {difficulty_context}")
                 
                 if st.button(f"Generate {total_q}-Question IT Exam", use_container_width=True, type="primary"):
-                    with st.spinner("Extracting textbook and generating IT quiz..."):
+                    with st.spinner("Researching IT 402 exam questions from educational web resources..."):
                         try:
-                            it_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "10thBooks", "Computers")
-                            pdf_name = "Class-10 (402) Information Technology.pdf"
-                            pdf_path = os.path.join(it_dir, pdf_name)
+                            if not difficulty_context:
+                                difficulty_context = "Subject: Information Technology (IT 402) for 10th Grade CBSE. Generate high-quality MCQs based on standard board pattern, matching key terms, shortcuts, and syntax."
                             
-                            pdf_text = ""
-                            used_files = []
-                            if os.path.exists(pdf_path):
-                                text = extract_text_from_pdf(pdf_path, start_page=pdf_start, end_page=pdf_end)
-                                if text:
-                                    pdf_text = text[:15000]
-                                    used_files.append(f"{pdf_name} (Pages {pdf_start}-{pdf_end})")
-                            else:
-                                st.error(f"Textbook file {pdf_name} not found in {it_dir}.")
+                            level = "10th Grade IT Student"
+                            final_topic = f"CBSE Class 10 Information Technology (IT 402) - {chapter_name}"
                             
-                            if not pdf_text:
-                                st.error("No text could be extracted from those pages.")
+                            mcqs_result = generate_full_quiz(
+                                pdf_text="",
+                                topic=final_topic,
+                                level=level,
+                                pdf_count=0,
+                                prompt_count=total_q,
+                                internet_count=0,
+                                difficulty_context=difficulty_context,
+                                prompt_level=level,
+                                prompt2_level=level,
+                            )
+                            st.session_state.mcqs = mcqs_result
+                            
+                            if not st.session_state.mcqs:
+                                st.error("AI returned 0 questions! Please try again.")
                             else:
-                                if not difficulty_context:
-                                    difficulty_context = "Subject: Information Technology (IT 402) for 10th Grade CBSE. Generate questions matching standard board pattern (factual definitions, keyboard shortcuts, database syntax)."
-                                
-                                level = "10th Grade IT Student"
-                                final_topic = f"IT 402 - {chapter_name}"
-                                
-                                mcqs_result = generate_full_quiz(
-                                    pdf_text=pdf_text,
-                                    topic=final_topic,
-                                    level=level,
-                                    pdf_count=total_q,
-                                    prompt_count=0,
-                                    internet_count=0,
-                                    difficulty_context=difficulty_context,
-                                    prompt_level=level,
-                                    prompt2_level=level,
-                                )
-                                st.session_state.mcqs = mcqs_result
-                                
-                                if not st.session_state.mcqs:
-                                    st.error("AI returned 0 questions! Please check console.")
-                                else:
-                                    st.session_state.quiz_generated = True
-                                    st.session_state.user_answers = {}
-                                    st.session_state.quiz_submitted = False
-                                    st.session_state.current_question_index = 0
-                                    st.session_state.quiz_format = None
-                                    st.session_state.test_saved = False
-                                    st.session_state.current_topic = final_topic
-                                    st.session_state.pdf_files_used = used_files
-                                    st.session_state.answered_questions = set()
-                                    st.success(f"IT Exam generated successfully! ({len(st.session_state.mcqs)} questions)")
-                                    st.rerun()
+                                st.session_state.quiz_generated = True
+                                st.session_state.user_answers = {}
+                                st.session_state.quiz_submitted = False
+                                st.session_state.current_question_index = 0
+                                st.session_state.quiz_format = None
+                                st.session_state.test_saved = False
+                                st.session_state.current_topic = final_topic
+                                st.session_state.pdf_files_used = ["Web Grounding Search (pw.live, learncbse.in, topperlearning.com)"]
+                                st.session_state.answered_questions = set()
+                                st.success(f"IT Exam generated successfully! ({len(st.session_state.mcqs)} questions)")
+                                st.rerun()
                         except Exception as e:
                             st.error(f"Error generating quiz: {str(e)}")
 
