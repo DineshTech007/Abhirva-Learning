@@ -413,7 +413,7 @@ def display_header():
     
     # Use GitHub Raw URL to absolutely guarantee it loads correctly on Streamlit Cloud
     img_url = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/smiling_pointing_bee_transparent.png"
-    img_html = f'<img class="hovering-bee" src="{img_url}" width="200">'
+    img_html = f'<img class="hovering-bee" src="{img_url}">'
 
     html_code = """<style>
 .header-wrapper {
@@ -455,8 +455,31 @@ animation: flyInRight 4s ease-out forwards;
 z-index: 6;
 }
 .hovering-bee {
+width: 230px;
 animation: hoverSmooth 2.5s ease-in-out infinite;
 filter: drop-shadow(0 8px 12px rgba(0,0,0,0.4));
+}
+
+@media (max-width: 768px) {
+    .header-wrapper {
+        flex-direction: column;
+        height: auto;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+    .flying-in-container {
+        position: relative;
+        left: 0;
+        margin-left: 0;
+        margin-bottom: 15px;
+        order: -1; /* Bee above text on mobile */
+    }
+    .hovering-bee {
+        width: 180px; /* Big and highly visible on mobile */
+    }
+    .logo-text-container {
+        padding: 10px 20px;
+    }
 }
 </style>
 <div class="header-wrapper">
