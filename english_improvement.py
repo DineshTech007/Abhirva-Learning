@@ -9,40 +9,41 @@ import streamlit.components.v1 as components
 import json
 import random
 import os
-from groq import Groq
 from dotenv import load_dotenv
+from utils import get_gemini_client, DEFAULT_GEMINI_MODEL
+try:
+    from google.genai import types
+except ImportError:
+    types = None
 
 import database as db
 
 load_dotenv(override=True)
 
-# ─────────────────────────────────────────────
-# Groq helper
-# ─────────────────────────────────────────────
-def get_groq_client():
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        return None
-    return Groq(api_key=api_key)
 
 def ai_generate(prompt: str, system: str = "") -> str:
-    """Call Groq LLaMA 3 and return the text response."""
-    client = get_groq_client()
+    """Call Google Gemini and return the text response."""
+    client = get_gemini_client()
     if not client:
         return ""
     try:
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
-        
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.7,
-            max_tokens=800
-        )
-        response_text = response.choices[0].message.content.strip()
+        if system and types:
+            config = types.GenerateContentConfig(
+                system_instruction=system,
+                temperature=0.7,
+                max_output_tokens=800
+            )
+            response = client.models.generate_content(
+                model=DEFAULT_GEMINI_MODEL,
+                contents=prompt,
+                config=config
+            )
+        else:
+            response = client.models.generate_content(
+                model=DEFAULT_GEMINI_MODEL,
+                contents=prompt
+            )
+        response_text = response.text.strip()
         
         # Clean up potential markdown blocks from LLMs
         if response_text.startswith("```json"):

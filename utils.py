@@ -11,27 +11,37 @@ from datetime import datetime
 
 import PyPDF2
 from docx import Document
-from groq import Groq
 from dotenv import load_dotenv
 
-# Model to use
-MODEL_NAME = "llama-3.1-8b-instant"
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
 
-def get_groq_client():
-    """Get a fresh Groq client using the current environment variables or Streamlit secrets."""
+# Default models
+DEFAULT_GEMINI_MODEL = "gemini-2.5-pro"
+
+
+def get_gemini_client():
+    """Get a fresh Gemini client using the current environment variables or Streamlit secrets."""
     load_dotenv(override=True)
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         try:
             import streamlit as st
-            api_key = st.secrets["GROQ_API_KEY"]
+            api_key = st.secrets["GEMINI_API_KEY"]
         except Exception:
             pass
             
-    if not api_key:
+    if not api_key or api_key == "your_gemini_api_key_here" or genai is None:
         return None
         
-    return Groq(api_key=api_key)
+    return genai.Client(api_key=api_key)
+
+
+
 
 # Directory to save tests
 SAVED_TESTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_tests")
@@ -52,10 +62,46 @@ def clean_extracted_text(text: str) -> str:
     cleaned = re.sub(r'\n+', '\n', cleaned)
     return cleaned
 
+def extract_clean_text_using_gemini(pdf_path: str) -> str:
+    """Upload PDF to Gemini to extract high-quality clean text using Gemini's native OCR."""
+    client = get_gemini_client()
+    if not client:
+        return ""
+    try:
+        print(f"Uploading {os.path.basename(pdf_path)} to Gemini for native OCR...")
+        uploaded_file = client.files.upload(file=pdf_path)
+        
+        prompt = "Extract and return the entire text of this document. Keep the formatting and language (e.g. Marathi) exactly as it is. Return ONLY the text, no summary, no notes."
+        response = client.models.generate_content(
+            model=DEFAULT_GEMINI_MODEL,
+            contents=[prompt, uploaded_file]
+        )
+        
+        # Clean up the file from Gemini to save space
+        try:
+            client.files.delete(name=uploaded_file.name)
+        except Exception:
+            pass
+            
+        return response.text.strip()
+    except Exception as e:
+        print(f"Error during Gemini OCR: {e}")
+        return ""
+
 def extract_text_from_pdf(pdf_file, start_page: int = None, end_page: int = None) -> str:
     """Extract text from a PDF file."""
     try:
-        if isinstance(pdf_file, str):
+        is_path = isinstance(pdf_file, str)
+        if is_path and os.path.exists(pdf_file):
+            # If the path contains "marathi" or "aksharbharti" (case-insensitive), run Gemini native OCR!
+            is_marathi = "marathi" in pdf_file.lower() or "aksharbharti" in pdf_file.lower()
+            if is_marathi:
+                gemini_text = extract_clean_text_using_gemini(pdf_file)
+                if gemini_text:
+                    return gemini_text
+                    
+        # Standard fallback extraction using PyPDF2
+        if is_path:
             reader = PyPDF2.PdfReader(pdf_file)
         else:
             reader = PyPDF2.PdfReader(pdf_file)
@@ -75,6 +121,7 @@ def extract_text_from_pdf(pdf_file, start_page: int = None, end_page: int = None
     except Exception as e:
         print(f"Error extracting PDF: {e}")
         return ""
+
 
 
 def extract_text_from_docx(docx_file) -> str:
@@ -132,48 +179,34 @@ def analyze_difficulty_from_paper(text: str) -> str:
     if not text or len(text.strip()) == 0:
         return ""
         
-    client = get_groq_client()
-    if not client:
+    gemini_client = get_gemini_client()
+    if not gemini_client:
         return ""
         
     try:
         prompt = f"You are an educational consultant. Analyze the provided exam paper and describe its difficulty level, typical question structure, vocabulary complexity, and the depth of knowledge required. Provide a concise summary that can be used to generate similar questions.\n\nAnalyze the difficulty of this exam paper:\n\n{text[:4000]}"
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=300
+        response = gemini_client.models.generate_content(
+            model=DEFAULT_GEMINI_MODEL,
+            contents=prompt
         )
-        return response.choices[0].message.content.strip()
+        return response.text.strip()
     except Exception:
         return ""
 
 
 def generate_mcqs_from_pdf_text(text: str, topic: str = "", num_questions: int = 15, level: str = "8-year-old children", difficulty_context: str = "") -> list:
     """
-    Generate multiple-choice questions from PDF/document text using Groq API.
-    
-    Args:
-        text (str): The text content to generate questions from
-        topic (str): The topic of the quiz
-        num_questions (int): Number of questions to generate (default: 15)
-        level (str): The difficulty level/target audience (default: "8-year-old children")
-        difficulty_context (str): Context for question generation
-        
-    Returns:
-        list: List of dictionaries containing question, options, correct answer, and source
+    Generate multiple-choice questions from PDF/document text using Google Gemini.
     """
     if not text or len(text.strip()) == 0:
         raise ValueError("No text provided to generate questions")
     
-    client = get_groq_client()
-    if not client:
-        raise Exception("Groq API key not found. Please add it to the .env file.")
+    gemini_client = get_gemini_client()
+    if not gemini_client:
+        raise Exception("Gemini API key not found. Please add it to the .env file.")
     
-    # Use more text for better coverage
     text = text[:120000]
     
-    import time
     all_mcqs = []
     questions_remaining = num_questions
     batch_size = 10
@@ -227,22 +260,19 @@ Ensure:
 5. Each question must have "source": "pdf" """
         
         try:
-            full_prompt = f"System: You are a helpful quiz creation assistant for children. You generate questions strictly from the provided text.\n\nUser: {prompt}"
-            
-            # If we are doing a second batch, sleep for 60 seconds to avoid the 6000 TPM limit of the 8B model!
-            if len(all_mcqs) > 0:
-                print("Waiting 60 seconds to bypass Groq 6000 TPM rate limit...")
-                time.sleep(60)
-                
-            response = client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[{"role": "user", "content": full_prompt}],
+            system_instruction = "You are a helpful quiz creation assistant. You generate questions strictly from the provided text."
+            config = types.GenerateContentConfig(
+                system_instruction=system_instruction,
                 temperature=0.7,
-                max_tokens=2000,
-                response_format={"type": "json_object"}
+                response_mime_type="application/json"
             )
+            response = gemini_client.models.generate_content(
+                model=DEFAULT_GEMINI_MODEL,
+                contents=prompt,
+                config=config
+            )
+            response_text = response.text.strip()
             
-            response_text = response.choices[0].message.content.strip()
             # Clean up potential markdown blocks from LLMs
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
@@ -284,7 +314,6 @@ Ensure:
             questions_remaining -= len(mcqs)
             
         except Exception as e:
-            # Stop generation if we encounter an error, maybe we already have some questions
             error_msg = f"Error generating PDF batch: {e}"
             print(error_msg)
             import traceback
@@ -296,53 +325,53 @@ Ensure:
 
 
 def generate_mcqs_from_internet(topic: str, num_questions: int = 10, level: str = "8-year-old children", difficulty_context: str = "") -> list:
-
     """
     Generate multiple-choice questions by searching the internet for the topic.
-    Uses OpenAI's web search capability to find current information.
-    Falls back to model knowledge if web search is unavailable.
-    
-    Args:
-        topic (str): The topic to search the internet for
-        num_questions (int): Number of questions to generate (default: 10)
-        level (str): The difficulty level/target audience (default: "8-year-old children")
-        
-    Returns:
-        list: List of dictionaries containing question, options, correct answer, and source
+    Uses Google Search Grounding with targeted educational domains (Physics Wallah, TopperLearning).
     """
     if not topic or len(topic.strip()) == 0:
         raise ValueError("No topic provided for internet-based questions")
     
+    gemini_client = get_gemini_client()
+    if not gemini_client:
+        raise Exception("Gemini API key not found. Please add it to the .env file.")
+            
     research_text = ""
     web_search_used = False
     
-    client = get_groq_client()
-    if not client:
-        raise Exception("Groq API key not found. Please add it to the .env file.")
-        
-    # Step 1: Use Groq to gather knowledge
+    # Step 1: Gather knowledge from internet (Targeted searches for Physics Wallah / TopperLearning)
     try:
+        search_query = f'site:pw.live OR site:topperlearning.com OR site:learncbse.in OR site:byjus.com 10th class standard questions and notes about: "{topic}"'
         research_prompt = (
-            f"You are a knowledgeable research assistant. Provide detailed, accurate, and comprehensive "
-            f"information about: {topic}. Include interesting facts, key details, important figures, "
-            f"dates, and educational content suitable for {level}."
+            f"You are a helpful educational assistant preparing material for a 10th grade student. "
+            f"Search the web using the query: '{search_query}'. "
+            f"Extract detailed, accurate, and comprehensive syllabus notes, questions, and revision content "
+            f"about: {topic}. Provide a detailed summary containing definitions, equations, facts, and question patterns "
+            f"suitable for {level}."
         )
-        research_response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": research_prompt}],
-            temperature=0.5,
-            max_tokens=2000
+        
+        # Enable Google Search Grounding
+        grounding_tool = types.Tool(google_search=types.GoogleSearch())
+        config = types.GenerateContentConfig(
+            system_instruction="You are a knowledgeable 10th grade CBSE/ICSE educational research assistant with access to Google Search.",
+            tools=[grounding_tool],
+            temperature=0.5
         )
-        research_text = research_response.choices[0].message.content.strip()
+        response = gemini_client.models.generate_content(
+            model=DEFAULT_GEMINI_MODEL,
+            contents=research_prompt,
+            config=config
+        )
+        research_text = response.text.strip()
         web_search_used = True
-    except Exception:
-        # Fallback
+            
+    except Exception as e:
+        print(f"Error gathering internet research: {e}")
         research_text = topic
         
     # Step 2: Generate MCQs from the researched content in batches
-    search_note = "from internet research" if web_search_used else "about this topic using your broad knowledge"
+    search_note = "from Physics Wallah / TopperLearning web research" if web_search_used else "about this topic using your broad knowledge"
     
-    import time
     all_mcqs = []
     questions_remaining = num_questions
     batch_size = 10
@@ -397,23 +426,27 @@ Ensure:
 5. Each question must have "source": "internet" """
         
         try:
-            full_prompt = f"System: You are a knowledgeable quiz creation assistant. You generate interesting questions about specific topics.\n\nUser: {prompt}"
-            
-            # If we are doing a second batch, sleep for 60 seconds to avoid the 6000 TPM limit of the 8B model!
-            if len(all_mcqs) > 0:
-                print("Waiting 60 seconds to bypass Groq 6000 TPM rate limit...")
-                time.sleep(60)
-                
-            response = client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[{"role": "user", "content": full_prompt}],
+            system_instruction = "You are an educational quiz creator. You generate questions strictly from the researched text."
+            config = types.GenerateContentConfig(
+                system_instruction=system_instruction,
                 temperature=0.7,
-                max_tokens=2000,
-                response_format={"type": "json_object"}
+                response_mime_type="application/json"
             )
+            response = gemini_client.models.generate_content(
+                model=DEFAULT_GEMINI_MODEL,
+                contents=prompt,
+                config=config
+            )
+            response_text = response.text.strip()
             
-            response_text = response.choices[0].message.content.strip()
-            
+            # Clean up potential markdown blocks from LLMs
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+                
             mcqs = _parse_mcq_response(response_text)
             
             # Format questions nicely before adding
@@ -454,6 +487,7 @@ Ensure:
             break
             
     return all_mcqs[:num_questions]
+
 
 
 def generate_full_quiz(
@@ -605,25 +639,21 @@ def generate_full_quiz(
     return all_mcqs
 
 
-
-
 def _extract_topic_from_text(text: str) -> str:
-    """Extract a topic/summary from the given text using OpenAI."""
-    client = get_groq_client()
-    if not client:
-        raise Exception("Groq API key not found. Please add it to the .env file.")
-        
-    try:
-        prompt = f"Extract the main topic or subject from the given text. Return only the topic name, nothing else.\n\nWhat is the main topic of this text?\n\n{text[:2000]}"
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=50
-        )
-        return response.choices[0].message.content.strip()
-    except Exception:
-        return "General Knowledge for Kids"
+    """Extract a topic/summary from the given text using Gemini."""
+    gemini_client = get_gemini_client()
+    if gemini_client:
+        try:
+            prompt = f"Extract the main topic or subject from the given text. Return only the topic name, nothing else.\n\nWhat is the main topic of this text?\n\n{text[:2000]}"
+            response = gemini_client.models.generate_content(
+                model=DEFAULT_GEMINI_MODEL,
+                contents=prompt
+            )
+            return response.text.strip()
+        except Exception:
+            pass
+            
+    return "General Knowledge for Kids"
 
 
 def _parse_mcq_response(response_text: str) -> list:

@@ -1647,8 +1647,8 @@ def main():
     
     # Sidebar for API key check and info
     with st.sidebar:
-        if not os.getenv("GROQ_API_KEY"):
-            st.error("Groq API key not found!")
+        if not os.getenv("GEMINI_API_KEY"):
+            st.error("Gemini API key not found!")
             st.info("Please add your API key to the .env file")
             return
         else:
@@ -1664,7 +1664,7 @@ def main():
             st.markdown(f"- Prompt: {prompt_q}")
         else:
             st.markdown("- No quiz generated yet")
-        st.markdown("- Model: LLaMA 3.3 70B")
+        st.markdown("- Model: Gemini 2.5 Pro")
     
     # ┌─┬─ MAIN NAVIGATION ─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─
     main_menu = option_menu(
@@ -1733,387 +1733,26 @@ def main():
 
         # ÇÇ SUB-TAB: Take Quiz ÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇ
         with sub_tab_quiz:
-            if st.session_state.quiz_submitted:
-                display_results()
-            elif st.session_state.quiz_generated:
-                # Quiz format selection
-                if st.session_state.quiz_format is None:
-                    st.markdown("""
-                        <div class='quiz-info-banner'>
-                             Quiz generated! Choose how you'd like to take it:
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button(" One at a Time", use_container_width=True):
-                            st.session_state.quiz_format = "single"
-                            st.rerun()
-                    with col2:
-                        if st.button("ï All Questions", use_container_width=True):
-                            st.session_state.quiz_format = "list"
-                            st.rerun()
-                elif st.session_state.quiz_format == "single":
-                    display_quiz_questions()
-                elif st.session_state.quiz_format == "list":
-                    display_quiz_list_format()
-            else:
-                # Quiz creation section
-                st.markdown("<h2> Create Your Quiz</h2>", unsafe_allow_html=True)
-                
-                # Level/Difficulty select
-                st.markdown("<h3> Difficulty Settings</h3>", unsafe_allow_html=True)
-                diff_mode = st.radio("Determine difficulty by:", ["Reference Exam Paper", "Standard Grade Level"], horizontal=True, index=0)
-                
-                difficulty_context = ""
-                level = "General"
-                
-                if diff_mode == "Standard Grade Level":
-                    level = st.selectbox(
-                        "Choose the target level:",
-                        options=[
-                            "Preschool", "1st Grade Student", "2nd Grade Student", "3rd Grade Student", 
-                            "4th Grade Student", "5th Grade Student", "6th Grade Student", 
-                            "7th Grade Student", "8th Grade Student", "High School Student", "General Adult"
-                        ],
-                        index=3, # Default 3rd Grade
-                        help="This determines the word choice and difficulty of the questions"
-                    )
-                else:
-                    ref_paper = st.file_uploader(
-                        "Upload Reference Exam Paper (Optional - 'cdfexam.pdf' used by default):",
-                        type=["pdf", "docx"],
-                        help="Upload a previous exam paper to match its vocabulary and complexity"
-                    )
-                    if ref_paper:
-                        with st.spinner(" Analyzing reference paper..."):
-                            if ref_paper.type == "application/pdf":
-                                ref_text = extract_text_from_pdf(ref_paper)
-                            else:
-                                ref_text = extract_text_from_docx(ref_paper)
-                            
-                            difficulty_context = analyze_difficulty_from_paper(ref_text)
-                            if difficulty_context:
-                                st.success(" Difficulty assessed from uploaded reference paper!")
-                                with st.expander(" View Difficulty Assessment"):
-                                    st.write(difficulty_context)
-                    else:
-                        default_pdf_path = os.path.join(TEST_FOLDER, "cdfexam.pdf")
-                        if os.path.exists(default_pdf_path):
-                            if "default_diff_context" not in st.session_state:
-                                with st.spinner(" Analyzing default reference paper (cdfexam.pdf)..."):
-                                    try:
-                                        ref_text = extract_text_from_pdf(default_pdf_path)
-                                        st.session_state.default_diff_context = analyze_difficulty_from_paper(ref_text)
-                                    except Exception as e:
-                                        st.session_state.default_diff_context = f"Matches the difficulty of cdfexam.pdf"
-                            
-                            difficulty_context = st.session_state.default_diff_context
-                            if difficulty_context:
-                                st.success(" Difficulty assessed from default paper (cdfexam.pdf)!")
-                                with st.expander(" View Difficulty Assessment"):
-                                    st.write(difficulty_context)
-                        else:
-                            st.info(" Please upload a paper to use custom difficulty (cdfexam.pdf not found).")
-
-                # Topic input
-                st.markdown("<h3> Primary Topic / Prompt</h3>", unsafe_allow_html=True)
-                
-                PRIMARY_TOPICS = [
-                    "science around us (rocket, space, india sending rockets, new invention for children, smart classroom computers)",
-                    "Artificial Intelligence and emerging technologies",
-                    "Solar System and Space Exploration",
-                    "Animals and Nature",
-                    "Mathematics and Fractions",
-                    "Indian History and Culture",
-                    "Health and Human Body",
-                    "Environment and Climate Change",
-                    "Geography and World Capitals",
-                    "Sports and Games",
-                    "Custom (type below)",
-                ]
-                
-                topic_choice = st.selectbox(
-                    "Select a primary topic:",
-                    options=PRIMARY_TOPICS,
-                    index=0,
-                    help="This will be used for internet research and to generate questions"
-                )
-                
-                if topic_choice == "Custom (type below)":
-                    topic = st.text_input(
-                        "Enter your custom primary topic:",
-                        placeholder="Type your primary topic here...",
-                    )
-                else:
-                    topic = topic_choice
-
-                GRADE_OPTIONS = [
-                    "Preschool", "1st Grade Student", "2nd Grade Student", "3rd Grade Student",
-                    "4th Grade Student", "5th Grade Student", "6th Grade Student",
-                    "7th Grade Student", "8th Grade Student", "High School Student", "General Adult"
-                ]
-                DHRUVA_PDF_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "DhruvaCDFexam.pdf")
-
-                # Primary difficulty mode
-                primary_diff_mode = st.radio(
-                    "Determine difficulty by:",
-                    ["Reference Exam Paper", "Standard Grade Level"],
-                    horizontal=True,
-                    index=0,
-                    key="primary_diff_mode"
-                )
-
-                if primary_diff_mode == "Standard Grade Level":
-                    primary_prompt_level = st.selectbox(
-                        " Grade level for Primary Topic questions:",
-                        options=GRADE_OPTIONS,
-                        index=2,  # Default: 2nd Grade Student
-                        key="primary_grade_level",
-                        help="Questions for the primary topic will be generated at this difficulty level"
-                    )
-                    primary_prompt_context = ""
-                else:
-                    primary_prompt_level = "General"
-                    primary_ref_paper = st.file_uploader(
-                        "Upload a reference exam paper for primary prompt (DhruvaCDFexam.pdf used by default):",
-                        type=["pdf", "docx"],
-                        key="primary_ref_upload",
-                        help="Upload a previous exam paper so questions match its style/vocabulary"
-                    )
-                    if primary_ref_paper:
-                        with st.spinner(" Analyzing primary reference paper..."):
-                            if primary_ref_paper.type == "application/pdf":
-                                primary_ref_text = extract_text_from_pdf(primary_ref_paper)
-                            else:
-                                primary_ref_text = extract_text_from_docx(primary_ref_paper)
-                            primary_prompt_context = analyze_difficulty_from_paper(primary_ref_text)
-                            if primary_prompt_context:
-                                st.success(" Primary prompt difficulty assessed from uploaded paper!")
-                                with st.expander(" View Primary Prompt Difficulty Assessment"):
-                                    st.write(primary_prompt_context)
-                    else:
-                        if os.path.exists(DHRUVA_PDF_PATH):
-                            if "primary_prompt_context" not in st.session_state:
-                                with st.spinner(" Analyzing DhruvaCDFexam.pdf for primary prompt..."):
-                                    try:
-                                        primary_ref_text = extract_text_from_pdf(DHRUVA_PDF_PATH)
-                                        st.session_state.primary_prompt_context = analyze_difficulty_from_paper(primary_ref_text)
-                                    except Exception:
-                                        st.session_state.primary_prompt_context = "Matches the difficulty of DhruvaCDFexam.pdf"
-                            primary_prompt_context = st.session_state.primary_prompt_context
-                            st.success(" Using DhruvaCDFexam.pdf as default reference for primary prompt!")
-                        else:
-                            primary_prompt_context = ""
-                            st.info(" DhruvaCDFexam.pdf not found at root. Upload a reference paper above.")
-
-                st.markdown("<h3> Secondary Topic / Prompt</h3>", unsafe_allow_html=True)
-                
-                SECONDARY_TOPICS = [
-                    "my body and healthy habit",
-                    "Economy and Development (budget announcements - simple concepts, digital payment and UPI, inflation basic idea, Viksit Bharat 24/7 vision)",
-                    "Indian Culture and Festivals",
-                    "Plants and Their Uses",
-                    "Water Cycle and Weather",
-                    "Famous Personalities of India",
-                    "Civics and Government",
-                    "Transport and Technology",
-                    "Custom (type below)",
-                ]
-                
-                topic2_choice = st.selectbox(
-                    "Select a secondary topic:",
-                    options=SECONDARY_TOPICS,
-                    index=0,
-                    help="This will be used for additional internet-researched questions"
-                )
-                
-                if topic2_choice == "Custom (type below)":
-                    topic2 = st.text_input(
-                        "Enter your custom secondary topic:",
-                        placeholder="Type your secondary topic here...",
-                    )
-                else:
-                    topic2 = topic2_choice
-
-                # Secondary difficulty mode
-                secondary_diff_mode = st.radio(
-                    "Determine difficulty by:",
-                    ["Reference Exam Paper", "Standard Grade Level"],
-                    horizontal=True,
-                    index=0,
-                    key="secondary_diff_mode"
-                )
-
-                if secondary_diff_mode == "Standard Grade Level":
-                    secondary_prompt_level = st.selectbox(
-                        " Grade level for Secondary Topic questions:",
-                        options=GRADE_OPTIONS,
-                        index=2,  # Default: 2nd Grade Student
-                        key="secondary_grade_level",
-                        help="Questions for the secondary topic will be generated at this difficulty level"
-                    )
-                    secondary_prompt_context = ""
-                else:
-                    secondary_prompt_level = "General"
-                    secondary_ref_paper = st.file_uploader(
-                        "Upload a reference exam paper for secondary prompt (DhruvaCDFexam.pdf used by default):",
-                        type=["pdf", "docx"],
-                        key="secondary_ref_upload",
-                        help="Upload a previous exam paper so secondary prompt questions match its style/vocabulary"
-                    )
-                    if secondary_ref_paper:
-                        with st.spinner(" Analyzing secondary reference paper..."):
-                            if secondary_ref_paper.type == "application/pdf":
-                                secondary_ref_text = extract_text_from_pdf(secondary_ref_paper)
-                            else:
-                                secondary_ref_text = extract_text_from_docx(secondary_ref_paper)
-                            secondary_prompt_context = analyze_difficulty_from_paper(secondary_ref_text)
-                            if secondary_prompt_context:
-                                st.success(" Secondary prompt difficulty assessed from uploaded paper!")
-                                with st.expander(" View Secondary Prompt Difficulty Assessment"):
-                                    st.write(secondary_prompt_context)
-                    else:
-                        if os.path.exists(DHRUVA_PDF_PATH):
-                            if "secondary_prompt_context" not in st.session_state:
-                                with st.spinner(" Analyzing DhruvaCDFexam.pdf for secondary prompt..."):
-                                    try:
-                                        secondary_ref_text = extract_text_from_pdf(DHRUVA_PDF_PATH)
-                                        st.session_state.secondary_prompt_context = analyze_difficulty_from_paper(secondary_ref_text)
-                                    except Exception:
-                                        st.session_state.secondary_prompt_context = "Matches the difficulty of DhruvaCDFexam.pdf"
-                            secondary_prompt_context = st.session_state.secondary_prompt_context
-                            st.success(" Using DhruvaCDFexam.pdf as default reference for secondary prompt!")
-                        else:
-                            secondary_prompt_context = ""
-                            st.info(" DhruvaCDFexam.pdf not found at root. Upload a reference paper above.")
-                
-
-                # Quiz Configuration
-                st.markdown("<h3>Ö∩╕ Quiz Configuration</h3>", unsafe_allow_html=True)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    total_q = st.number_input("Total Number of Questions", min_value=1, max_value=100, value=25)
-                with col2:
-                    q_source_mode = st.radio("Primary Content Source", ["General File Content", "Topic Prompt"], index=0)
-
-                st.markdown("<h4> Question Distribution</h4>", unsafe_allow_html=True)
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    inspiring_pdf_count = st.number_input(" Inspiring Personality (PDF)", min_value=0, max_value=100, value=5)
-                with c2:
-                    continent_pdf_count = st.number_input(" Continent/Ocean (PDF)", min_value=0, max_value=100, value=10)
-                with c3:
-                    pdf_count = st.number_input(" General PDF", min_value=0, max_value=100, value=0)
-                
-                c4, c5, c6 = st.columns(3)
-                with c4:
-                    prompt_count = st.number_input(" From Primary Prompt", min_value=0, max_value=100, value=5)
-                with c5:
-                    prompt2_count = st.number_input(" From Secondary Prompt", min_value=0, max_value=100, value=5)
-                with c6:
-                    internet_count = st.number_input(" From Internet", min_value=0, max_value=100, value=max(0, total_q - (inspiring_pdf_count + continent_pdf_count + pdf_count + prompt_count + prompt2_count)))
-
-                # Validation message
-                current_total = inspiring_pdf_count + continent_pdf_count + pdf_count + prompt_count + prompt2_count + internet_count
-                if current_total != total_q:
-                    st.warning(f"∩╕ Sum of questions ({current_total}) does not match Total ({total_q}). The distribution counts will be used.")
-
-                # Removed generic test folder PDF multiselect
-                
-                # Additional file upload
-                st.markdown("<h3> Or upload additional files (optional)</h3>", unsafe_allow_html=True)
-                st.info("Upload extra PDF or DOCX files to include in the quiz")
-                
-                uploaded_files = st.file_uploader(
-                    "Choose files:",
-                    type=["pdf", "docx"],
-                    accept_multiple_files=True,
-                    help="You can upload additional PDF or DOCX files"
-                )
-                
-                # Dynamic Info Banner based on selection
-                st.markdown(f"""
-                    <div class='quiz-info-banner'>
-                         <strong>Quiz Plan:</strong> {current_total} questions total.<br>
-                        {f" {inspiring_pdf_count} Inspiring  | " if inspiring_pdf_count > 0 else ""}{f" {continent_pdf_count} Continent | " if continent_pdf_count > 0 else ""}{f" {pdf_count} General PDF | " if pdf_count > 0 else ""}{f" {prompt_count} Primary Prompt | " if prompt_count > 0 else ""}{f" {prompt2_count} Secondary Prompt | " if prompt2_count > 0 else ""}{f" {internet_count} Internet" if internet_count > 0 else ""}
+            st.markdown("""
+                <div class='result-box' style='border-left: 5px solid #ff8c00; background: rgba(255, 255, 255, 0.05); padding: 2.5rem; border-radius: 15px;'>
+                    <div style='font-size: 4rem; margin-bottom: 1rem;'>🔒</div>
+                    <div style='font-size: 1.8rem; font-weight: bold; color: #FFD700; margin-bottom: 0.5rem; font-family: "Outfit", sans-serif;'>
+                        Exam Genius AI is Locked
                     </div>
-                """, unsafe_allow_html=True)
-                
-                # Generate button
-                if st.button(f"¿ Generate {current_total}-Question Quiz", use_container_width=True, type="primary"):
-                    if not topic and not topic2 and not uploaded_files and pdf_count == 0 and prompt_count == 0 and prompt2_count == 0 and inspiring_pdf_count == 0 and continent_pdf_count == 0:
-                        st.error(" Please provide some content (Topic or PDFs)!")
-                    else:
-                        with st.spinner(f"ñû Generating your {level} quiz... This may take a moment..."):
-                            try:
-                                inspiring_pdf_text = extract_text_from_all_pdfs_in_folder(os.path.join(TEST_FOLDER, "inspiringpersonality"))
-                                continent_pdf_text = extract_text_from_all_pdfs_in_folder(os.path.join(TEST_FOLDER, "continentandocean"))
-                                
-                                # Step 1: No longer relying on selected_pdfs from test root
-                                pdf_text = ""
-                                used_files = []
-                                
-                                # Step 2: Extract text from uploaded files
-                                if uploaded_files:
-                                    for uf in uploaded_files:
-                                        try:
-                                            if uf.type == "application/pdf":
-                                                text = extract_text_from_pdf(uf)
-                                            elif uf.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                                                text = extract_text_from_docx(uf)
-                                            else:
-                                                continue
-                                            if text:
-                                                pdf_text += f"\n\n--- Content from {uf.name} ---\n{text}"
-                                                used_files.append(uf.name)
-                                        except Exception:
-                                            continue
-                                
-                                # Step 3: Generate the quiz with custom counts and difficulty
-                                st.session_state.mcqs = generate_full_quiz(
-                                    pdf_text=pdf_text,
-                                    topic=topic if topic else "",
-                                    level=level,
-                                    pdf_count=pdf_count,
-                                    prompt_count=prompt_count,
-                                    internet_count=internet_count,
-                                    difficulty_context=difficulty_context,
-                                    inspiring_pdf_text=inspiring_pdf_text,
-                                    inspiring_pdf_count=inspiring_pdf_count,
-                                    continent_pdf_text=continent_pdf_text,
-                                    continent_pdf_count=continent_pdf_count,
-                                    topic2=topic2 if topic2 else "",
-                                    prompt2_count=prompt2_count,
-                                    prompt_level=primary_prompt_level,
-                                    prompt2_level=secondary_prompt_level,
-                                    primary_prompt_context=primary_prompt_context,
-                                    secondary_prompt_context=secondary_prompt_context,
-                                )
-
-                                st.session_state.quiz_generated = True
-                                st.session_state.user_answers = {}
-                                st.session_state.quiz_submitted = False
-                                st.session_state.current_question_index = 0
-                                st.session_state.quiz_format = None
-                                st.session_state.test_saved = False
-                                st.session_state.current_topic = topic if topic else "PDF Quiz"
-                                st.session_state.pdf_files_used = used_files
-                                st.session_state.answered_questions = set()
-                                
-                                st.success(f" Quiz generated! {current_total} total questions!")
-                                st.rerun()
-                            
-                            except Exception as e:
-                                st.error(f" Error generating quiz: {str(e)}")
-                                st.info(" Tips: Make sure your OpenAI API key is valid and you have sufficient credits")
+                    <div style='font-size: 1.15rem; color: #fff; line-height: 1.6; font-family: "Outfit", sans-serif;'>
+                        To optimize token usage, AI Exam Generation is exclusively enabled for the 
+                        <strong>10th Exam</strong> section.
+                    </div>
+                    <div style='font-size: 1rem; color: #ddd; margin-top: 1rem; font-style: italic; font-family: "Outfit", sans-serif;'>
+                        Please switch to the "10th Exam" tab in the main menu to generate high-quality quizzes!
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
         # ÇÇ SUB-TAB: Saved Tests ÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇ
         with sub_tab_saved:
             display_saved_tests(exam_type="cdf")
 
-    # ÇÇ PAGE: ENGLISH IMPROVEMENT ÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇÇ
     elif top_menu == " English Improvement Games":
         st.session_state.top_tab = 1
         st.markdown("<p style='text-align:center;color:white;opacity:0.9;font-size:1.1em;'>Build up your vocabulary step-by-step with fun spelling and word-meaning games!</p>", unsafe_allow_html=True)
