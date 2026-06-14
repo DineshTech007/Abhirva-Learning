@@ -1514,23 +1514,6 @@ def display_10th_exam():
     with sub_tab_saved:
         display_saved_tests(exam_type="10th")
     
-@st.dialog("📱 Get BrainyBee!")
-def install_popup():
-    st.markdown("""
-    **Get BrainyBee on your home screen for the best experience!**
-    
-    **📱 iPhone/iPad (Safari)**
-    1. Tap the **Share** square with an arrow at the bottom.
-    2. Scroll down and tap **Add to Home Screen**.
-    
-    **🤖 Android (Chrome)**
-    1. Tap the **Menu** (three dots) at the top right.
-    2. Tap **Add to Home screen** or **Install app**.
-    """)
-    if st.button("Got it!", use_container_width=True):
-        st.session_state.show_install_popup = False
-        st.rerun()
-
 def main():
     """Main application logic"""
     if "user" not in st.session_state or not st.session_state.user:
@@ -2027,14 +2010,16 @@ def main():
         display_maths_games()
 
     st.divider()
-    if getattr(st.session_state, 'show_install_popup', False):
-        install_popup()
-
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("🐝 Install App to Home Screen", use_container_width=True):
-            st.session_state.show_install_popup = True
-            st.rerun()
+    
+    native_install_html = """
+    <div id="custom-install-container" style="display:flex; justify-content:center; margin-top:10px;">
+        <button id="real-install-btn" style="background-color: #ff4b4b; color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 350px;">
+            🐝 Install App to Home Screen
+        </button>
+    </div>
+    <img src="dummy" style="display:none;" onerror="if (!window.realInstallScriptLoaded) { window.realInstallScriptLoaded = true; window.deferredPrompt = null; window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.deferredPrompt = e; }); setTimeout(() => { const btn = document.getElementById('real-install-btn'); const container = document.getElementById('custom-install-container'); if (window.matchMedia('(display-mode: standalone)').matches && container) { container.style.display = 'none'; } if (btn) { btn.addEventListener('click', async () => { if (window.deferredPrompt) { window.deferredPrompt.prompt(); const { outcome } = await window.deferredPrompt.userChoice; window.deferredPrompt = null; } else { const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); if (isIOS) { alert('Apple iOS Security restricts direct installation.\\n\\nTo install on iPhone/iPad:\\n1. Tap the Share icon at the bottom of Safari.\\n2. Tap Add to Home Screen.'); } else { alert('To install on Android:\\n1. Tap the Menu (three dots) at top right.\\n2. Tap Install app.'); } } }); } }, 1000); }">
+    """
+    st.markdown(native_install_html, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
