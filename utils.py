@@ -882,3 +882,83 @@ def delete_saved_test(filename: str) -> bool:
     except Exception:
         pass
     return False
+
+
+def analyze_exam_paper_image(image_file) -> str:
+    """
+    Analyze a photo of a previous exam paper using Gemini Pro's multimodal capabilities
+    to extract the question style, difficulty, and format.
+    """
+    client = get_gemini_client()
+    if not client:
+        return ""
+    try:
+        from PIL import Image
+        img = Image.open(image_file)
+        prompt = (
+            "You are an expert curriculum developer. Analyze this image of a previous board exam paper. "
+            "Identify the structure, difficulty level, types of questions, vocabulary complexity, and specific "
+            "topics tested. Write a detailed profile summarizing these characteristics to guide the generation "
+            "of identical practice questions. Keep it under 250 words."
+        )
+        response = client.models.generate_content(
+            model=DEFAULT_GEMINI_MODEL,
+            contents=[img, prompt]
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"Error analyzing exam image: {e}")
+        return ""
+
+
+def generate_english_comprehension_mcqs(num_passages: int = 2, questions_per_passage: int = 5, level: str = "10th Grade") -> list:
+    """
+    Generate unseen reading comprehension passages and MCQs based on those passages.
+    """
+    client = get_gemini_client()
+    if not client or genai is None or types is None:
+        return []
+    
+    all_mcqs = []
+    for i in range(num_passages):
+        prompt = f"""
+        Create an engaging reading comprehension passage (approx. 300 words) suitable for a {level} English exam.
+        The topic should be interesting and educational (e.g., science history, nature, inspiring anecdotes).
+        Based strictly on this passage, generate exactly {questions_per_passage} multiple-choice questions.
+        
+        Return ONLY a JSON object with this structure:
+        {{
+            "passage": "Full passage text here...",
+            "mcqs": [
+                {{
+                    "question": "Question text based on passage?",
+                    "options": ["A", "B", "C", "D"],
+                    "correct_answer": "Correct option text",
+                    "source": "english_comprehension"
+                }}
+            ]
+        }}
+        """
+        try:
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.7
+            )
+            response = client.models.generate_content(
+                model=DEFAULT_GEMINI_MODEL,
+                contents=prompt,
+                config=config
+            )
+            data = json.loads(response.text.strip())
+            passage = data.get("passage", "")
+            mcqs = data.get("mcqs", [])
+            
+            # Format questions to include the passage for reference in the UI
+            for mcq in mcqs:
+                mcq["question"] = f"**[Reading Passage {i+1}]**\n\n{passage}\n\n**Question:** {mcq['question']}"
+                mcq["source"] = "pdf"  # Render as standard PDF source question
+                all_mcqs.append(mcq)
+        except Exception as e:
+            print(f"Error generating comprehension passage {i+1}: {e}")
+            
+    return all_mcqs
