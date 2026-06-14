@@ -446,11 +446,18 @@ def display_header():
         const iconUrl = "{icon_url}";
         const parentDoc = window.parent.document;
 
-        // Remove Streamlit's default manifest
-        const manifest = parentDoc.querySelector("link[rel='manifest']");
-        if (manifest) {{ manifest.remove(); }}
+        // Replace Streamlit's manifest with our custom BrainyBee manifest
+        const existingManifest = parentDoc.querySelector("link[rel='manifest']");
+        if (existingManifest) {{
+            existingManifest.href = '/app/static/manifest.json';
+        }} else {{
+            const newManifest = parentDoc.createElement('link');
+            newManifest.rel = 'manifest';
+            newManifest.href = '/app/static/manifest.json';
+            parentDoc.head.appendChild(newManifest);
+        }}
 
-        // Override all icon links
+        // Override all icon links with BrainyBee icon
         const links = parentDoc.querySelectorAll("link[rel*='icon'], link[rel='apple-touch-icon']");
         links.forEach(link => {{ link.href = iconUrl; }});
 
