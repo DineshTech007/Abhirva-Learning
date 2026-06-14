@@ -417,6 +417,7 @@ def display_header():
 
     html_code = """<style>
 .header-wrapper {
+position: relative;
 display: flex;
 flex-direction: row;
 justify-content: center;
@@ -430,15 +431,15 @@ overflow: visible;
 display: flex;
 flex-direction: column;
 justify-content: center;
-text-align: right;
+text-align: center;
 z-index: 5;
 background: rgba(102, 126, 234, 0.1);
-padding: 10px 30px;
+padding: 10px 40px;
 border-radius: 20px;
 backdrop-filter: blur(5px);
 }
 @keyframes flyInRight {
-0% { transform: translate(100vw, 0px) scale(0.8); opacity: 0; }
+0% { transform: translate(50vw, 0px) scale(0.8); opacity: 0; }
 100% { transform: translate(0, 0) scale(1); opacity: 1; }
 }
 @keyframes hoverSmooth {
@@ -447,8 +448,11 @@ backdrop-filter: blur(5px);
 100% { transform: translateY(-12px); }
 }
 .flying-in-container {
+position: absolute;
+left: 50%;
+margin-left: 140px;
 animation: flyInRight 4s ease-out forwards;
-margin-left: 20px;
+z-index: 6;
 }
 .hovering-bee {
 animation: hoverSmooth 2.5s ease-in-out infinite;
