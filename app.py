@@ -462,23 +462,22 @@ filter: drop-shadow(0 8px 12px rgba(0,0,0,0.4));
 
 @media (max-width: 768px) {
     .header-wrapper {
-        flex-direction: column;
-        height: auto;
-        padding-top: 20px;
-        padding-bottom: 20px;
+        flex-direction: row;
+        height: 120px;
+        padding-top: 10px;
+        padding-bottom: 10px;
     }
     .flying-in-container {
         position: relative;
-        left: 0;
-        margin-left: 0;
-        margin-bottom: 15px;
-        order: -1; /* Bee above text on mobile */
+        left: auto;
+        margin-left: 10px;
+        margin-bottom: 0px;
     }
     .hovering-bee {
-        width: 180px; /* Big and highly visible on mobile */
+        width: 90px; /* Small enough to fit next to title on mobile */
     }
     .logo-text-container {
-        padding: 10px 20px;
+        padding: 10px 15px;
     }
 }
 </style>
