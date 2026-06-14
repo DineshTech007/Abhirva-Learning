@@ -420,20 +420,64 @@ def display_header():
 
     st.markdown(f"""
         <style>
-        @keyframes flyBounce {{
-            0%, 100% {{ transform: translateY(0); }}
-            50% {{ transform: translateY(-12px); }}
+        .header-wrapper {{
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 120px;
+            margin-bottom: 2rem;
+            margin-top: 1rem;
         }}
-        .flying-bee {{
-            animation: flyBounce 2.5s ease-in-out infinite;
+        
+        .logo-text-container {{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            z-index: 5;
+            position: relative;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 10px 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }}
+
+        @keyframes orbitFly {{
+            0%   {{ transform: translate(-180px, 0px) rotate(15deg) scaleX(-1); z-index: 10; }}
+            25%  {{ transform: translate(0px, -60px) rotate(5deg) scaleX(-1); z-index: 10; }}
+            49.9%{{ transform: translate(180px, 0px) rotate(-15deg) scaleX(-1); z-index: 10; }}
+            50%  {{ transform: translate(180px, 0px) rotate(-15deg) scaleX(1); z-index: 1; }}
+            75%  {{ transform: translate(0px, 40px) rotate(-5deg) scaleX(1); z-index: 1; }}
+            99.9%{{ transform: translate(-180px, 0px) rotate(15deg) scaleX(1); z-index: 1; }}
+            100% {{ transform: translate(-180px, 0px) rotate(15deg) scaleX(-1); z-index: 10; }}
+        }}
+        
+        @keyframes buzzFlap {{
+            0% {{ transform: rotate(-3deg) translateY(-2px); }}
+            50% {{ transform: rotate(3deg) translateY(2px); }}
+            100% {{ transform: rotate(-3deg) translateY(-2px); }}
+        }}
+
+        .orbiting-bee-container {{
+            position: absolute;
+            animation: orbitFly 5s linear infinite;
+        }}
+        
+        .buzzing-bee {{
+            animation: buzzFlap 0.1s ease-in-out infinite;
         }}
         </style>
-        <div class="logo-container" style="justify-content: center; align-items: center; display: flex; margin-bottom: 1rem;">
-            <div style="display: flex; flex-direction: column; justify-content: center; text-align: right;">
-                <div class="logo-text" style="line-height: 1.1;">BrainyBee</div>
+        
+        <div class="header-wrapper">
+            <div class="logo-text-container">
+                <div class="logo-text" style="line-height: 1.1; margin:0;">BrainyBee</div>
                 <div class="logo-subtext" style="margin-top: 0;">Kids Learning</div>
             </div>
-            {img_html}
+            
+            <div class="orbiting-bee-container">
+                {img_html.replace('class="flying-bee"', 'class="buzzing-bee"').replace('width="120"', 'width="100"').replace('margin-left: 20px;', '')}
+            </div>
         </div>
     """, unsafe_allow_html=True)
     
