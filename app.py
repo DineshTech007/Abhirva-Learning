@@ -2108,16 +2108,56 @@ def main():
         display_maths_games()
 
     st.divider()
-    
-    native_install_html = """
-    <div id="custom-install-container" style="display:flex; justify-content:center; margin-top:10px;">
-        <button id="real-install-btn" style="background-color: #ff4b4b; color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 350px;">
-            🐝 Install App to Home Screen
+    components.html("""
+    <html>
+    <body style="margin:0; padding:0; background:transparent;">
+    <div style="display:flex; justify-content:center; padding:10px 0 20px 0;">
+        <button id="install-btn2" onclick="handleInstall2()" style="
+            background:#ff4b4b; color:white; border:none; border-radius:8px;
+            padding:12px 32px; font-size:15px; font-weight:bold; cursor:pointer;
+            font-family:sans-serif;">
+            &#x1F41D; Install App
         </button>
     </div>
-    <img src="dummy" style="display:none;" onerror="if (!window.realInstallScriptLoaded) { window.realInstallScriptLoaded = true; window.deferredPrompt = null; window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.deferredPrompt = e; }); setTimeout(() => { const btn = document.getElementById('real-install-btn'); const container = document.getElementById('custom-install-container'); if (window.matchMedia('(display-mode: standalone)').matches && container) { container.style.display = 'none'; } if (btn) { btn.addEventListener('click', async () => { if (window.deferredPrompt) { window.deferredPrompt.prompt(); const { outcome } = await window.deferredPrompt.userChoice; window.deferredPrompt = null; } else { const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); if (isIOS) { alert('Apple iOS Security restricts direct installation.\\n\\nTo install on iPhone/iPad:\\n1. Tap the Share icon at the bottom of Safari.\\n2. Tap Add to Home Screen.'); } else { alert('To install on Android:\\n1. Tap the Menu (three dots) at top right.\\n2. Tap Install app.'); } } }); } }, 1000); }">
-    """
-    st.markdown(native_install_html, unsafe_allow_html=True)
+    <div id="msg2" style="text-align:center; font-family:sans-serif; font-size:13px; color:#333; padding:0 10px;"></div>
+    <script>
+        var deferredPrompt2 = null;
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt2 = e;
+        });
+
+        window.addEventListener('appinstalled', function() {
+            document.getElementById('install-btn2').style.display = 'none';
+            document.getElementById('msg2').innerText = 'App installed!';
+        });
+
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            document.getElementById('install-btn2').style.display = 'none';
+            document.getElementById('msg2').innerText = 'App already installed!';
+        }
+
+        async function handleInstall2() {
+            if (deferredPrompt2) {
+                deferredPrompt2.prompt();
+                await deferredPrompt2.userChoice;
+                deferredPrompt2 = null;
+            } else {
+                var ua = navigator.userAgent || '';
+                var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                if (isIOS) {
+                    document.getElementById('msg2').innerHTML = '<b>iPhone/iPad:</b><br>1. Tap the <b>Share</b> icon in Safari.<br>2. Tap <b>Add to Home Screen</b>.';
+                } else {
+                    document.getElementById('msg2').innerHTML = '<b>Android Chrome:</b><br>1. Tap the <b>3-dot menu</b> at top right.<br>2. Tap <b>Install app</b>.';
+                }
+            }
+        }
+    </script>
+    </body>
+    </html>
+    """, height=120)
+
 
 if __name__ == "__main__":
     main()
