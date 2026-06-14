@@ -38,7 +38,7 @@ TEST_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
 # Page configuration
 st.set_page_config(
     page_title="BrainyBee Kids Learning",
-    page_icon="",
+    page_icon="assets/logo.png",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -410,13 +410,17 @@ if "default_tab_index" not in st.session_state:
 
 def display_header():
     """Display the app header with title and total stars"""
-    st.markdown("""
-        <div class="logo-container">
-            <div class="bee-logo-anim"></div>
-            <div class="logo-text">BrainyBee</div>
-            <div class="logo-subtext">Kids Learning</div>
-        </div>
-    """, unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if os.path.exists("assets/cartoon.png"):
+            st.image("assets/cartoon.png", width=120)
+    with col2:
+        st.markdown("""
+            <div class="logo-container" style="justify-content: flex-start;">
+                <div class="logo-text">BrainyBee</div>
+                <div class="logo-subtext">Kids Learning</div>
+            </div>
+        """, unsafe_allow_html=True)
     
     if st.session_state.user:
         col1, col2, col3 = st.columns([1,3,1])
