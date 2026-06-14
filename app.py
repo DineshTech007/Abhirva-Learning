@@ -466,23 +466,14 @@ def display_header():
         if (!window.installScriptLoaded) {{
             window.installScriptLoaded = true;
             window.deferredPrompt = null;
-            
-            window.addEventListener('beforeinstallprompt', (e) => {{
-                e.preventDefault();
-                window.deferredPrompt = e;
-            }});
-            
+            window.addEventListener('beforeinstallprompt', (e) => {{ e.preventDefault(); window.deferredPrompt = e; }});
             setTimeout(() => {{
                 const btnWrap = document.getElementById('custom-install-btn-wrapper');
-                if (window.matchMedia('(display-mode: standalone)').matches) {{
-                    if (btnWrap) btnWrap.style.display = 'none';
-                }}
-                
+                if (window.matchMedia('(display-mode: standalone)').matches && btnWrap) {{ btnWrap.style.display = 'none'; }}
                 const btn = document.getElementById('custom-install-btn');
                 const mod = document.getElementById('inst-mod');
                 const over = document.getElementById('inst-over');
                 const closeBtn = document.getElementById('close-inst-btn');
-                
                 if (btn) {{
                     btn.addEventListener('click', async () => {{
                         if (window.deferredPrompt) {{
@@ -490,16 +481,13 @@ def display_header():
                             const {{ outcome }} = await window.deferredPrompt.userChoice;
                             window.deferredPrompt = null;
                         }} else {{
-                            mod.style.display = 'block';
-                            over.style.display = 'block';
+                            mod.style.display = 'block'; over.style.display = 'block';
                         }}
                     }});
                 }}
-                
                 if (closeBtn && over) {{
                     const closeModal = () => {{ mod.style.display = 'none'; over.style.display = 'none'; }};
-                    closeBtn.addEventListener('click', closeModal);
-                    over.addEventListener('click', closeModal);
+                    closeBtn.addEventListener('click', closeModal); over.addEventListener('click', closeModal);
                 }}
             }}, 1000);
         }}
