@@ -1169,57 +1169,44 @@ def display_auth_page():
                         st.error("Username already taken. Try another.")
 
     st.divider()
-    st.markdown("<p style='text-align:center; color:white; opacity:0.7; font-size:13px;'>Add BrainyBee to your home screen for the best experience!</p>", unsafe_allow_html=True)
     components.html("""
-    <html>
-    <body style="margin:0; padding:0; background:transparent;">
-    <div style="display:flex; justify-content:center; padding:10px 0 20px 0;">
-        <button id="install-btn" onclick="handleInstall()" style="
-            background:#ff4b4b; color:white; border:none; border-radius:8px;
-            padding:12px 32px; font-size:15px; font-weight:bold; cursor:pointer;
-            font-family:sans-serif;">
-            &#x1F41D; Install App
+    <html><body style="margin:0;padding:8px;background:transparent;font-family:sans-serif;">
+    <div id="instructions" style="display:none; background:#fff; border-radius:10px; padding:14px; margin-top:8px; font-size:13px; line-height:1.7; color:#333; border-left:4px solid #ff4b4b;">
+        <div id="ios-steps" style="display:none;">
+            <b>&#x1F34F; On iPhone or iPad (Safari):</b><br>
+            1. Tap the <b>Share</b> icon &#x2B06; at the bottom of the screen<br>
+            2. Scroll down and tap <b>"Add to Home Screen"</b><br>
+            3. Tap <b>Add</b> &#8212; BrainyBee will appear on your home screen!
+        </div>
+        <div id="android-steps" style="display:none;">
+            <b>&#x1F916; On Android (Chrome):</b><br>
+            1. Tap the <b>3-dot menu &#8942;</b> at the top right of Chrome<br>
+            2. Tap <b>"Add to Home screen"</b> (not Install app)<br>
+            3. Tap <b>Add</b> &#8212; BrainyBee icon will appear!
+        </div>
+    </div>
+    <div style="display:flex;justify-content:center;padding:8px 0 4px;">
+        <button onclick="showSteps()" style="background:#ff4b4b;color:white;border:none;border-radius:8px;padding:12px 32px;font-size:15px;font-weight:bold;cursor:pointer;font-family:sans-serif;" id="install-btn">
+            &#x1F41D; How to Install BrainyBee
         </button>
     </div>
-    <div id="msg" style="text-align:center; font-family:sans-serif; font-size:13px; color:#333; padding:0 10px;"></div>
     <script>
-        var deferredPrompt = null;
-
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('msg').innerText = 'Tap the button to install!';
-        });
-
-        window.addEventListener('appinstalled', function() {
-            document.getElementById('install-btn').style.display = 'none';
-            document.getElementById('msg').innerText = 'App installed successfully!';
-        });
-
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            document.getElementById('install-btn').style.display = 'none';
-            document.getElementById('msg').innerText = 'App already installed!';
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        document.getElementById('install-btn').style.display = 'none';
+    }
+    function showSteps() {
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        document.getElementById('instructions').style.display = 'block';
+        if (isIOS) {
+            document.getElementById('ios-steps').style.display = 'block';
+        } else {
+            document.getElementById('android-steps').style.display = 'block';
         }
-
-        async function handleInstall() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                var result = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-            } else {
-                var ua = navigator.userAgent || '';
-                var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                if (isIOS) {
-                    document.getElementById('msg').innerHTML = '<b>iPhone/iPad:</b><br>1. Tap the <b>Share</b> icon at bottom of Safari.<br>2. Tap <b>Add to Home Screen</b>.';
-                } else {
-                    document.getElementById('msg').innerHTML = '<b>Android Chrome:</b><br>1. Tap the <b>3-dot menu</b> at top right.<br>2. Tap <b>Install app</b> or <b>Add to Home screen</b>.';
-                }
-            }
-        }
+    }
     </script>
-    </body>
-    </html>
-    """, height=120)
+    </body></html>
+    """, height=180)
 
 def display_10th_exam():
     st.markdown("<p style='text-align:center;color:white;opacity:0.9;font-size:1.1em;'>Subject-wise 10th Grade Exams</p>", unsafe_allow_html=True)
