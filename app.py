@@ -1047,6 +1047,7 @@ def display_results():
     
     # Display detailed answers
     with st.expander(" View Detailed Answers"):
+        last_rendered_passage_id = None
         for i, mcq in enumerate(st.session_state.mcqs):
             user_answer = st.session_state.user_answers.get(i, "Not answered")
             correct_answer = mcq['correct_answer']
@@ -1056,10 +1057,25 @@ def display_results():
                 source_label = " PDF"
             elif source == "internet":
                 source_label = " Internet"
+            elif source == "english_comprehension":
+                source_label = " Reading Comprehension"
             else:
                 source_label = " Topic"
             
-            icon = "" if is_correct else ""
+            # Display reading comprehension passage once per unique passage
+            passage_id = mcq.get("passage_id")
+            if passage_id and passage_id != last_rendered_passage_id:
+                st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); 
+                                padding: 1.2rem; border-radius: 10px; border-left: 5px solid #38ef7d; margin-bottom: 1rem;
+                                margin-top: 1rem; line-height: 1.6; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); color: #fff;'>
+                         <strong>📖 Reading Passage {passage_id}:</strong><br><br>
+                         {mcq['passage']}
+                    </div>
+                """, unsafe_allow_html=True)
+                last_rendered_passage_id = passage_id
+            
+            icon = "✅" if is_correct else "❌"
             st.markdown(f"**{icon} Question {i + 1}** [{source_label}]: {mcq['question']}")
             st.markdown(f"Your answer: **{user_answer}**")
             if not is_correct:
@@ -1133,6 +1149,23 @@ def display_saved_tests(exam_type="all"):
             score_color = "#e74c3c"
             score_emoji = ""
         
+        pdf_cnt = test.get('pdf_questions_count', 0)
+        prompt_cnt = test.get('prompt_questions_count', 0)
+        internet_cnt = test.get('internet_questions_count', 0)
+        comp_cnt = test.get('comprehension_questions_count', 0)
+        
+        meta_parts = []
+        if pdf_cnt > 0:
+            meta_parts.append(f"PDF: {pdf_cnt}")
+        if prompt_cnt > 0:
+            meta_parts.append(f"Prompt: {prompt_cnt}")
+        if internet_cnt > 0:
+            meta_parts.append(f"Internet: {internet_cnt}")
+        if comp_cnt > 0:
+            meta_parts.append(f"Reading Comprehension: {comp_cnt}")
+            
+        meta_str = " | ".join(meta_parts) if meta_parts else "General"
+
         st.markdown(f"""
             <div class='saved-test-card'>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
@@ -1150,19 +1183,40 @@ def display_saved_tests(exam_type="all"):
                     </div>
                 </div>
                 <div style='margin-top: 8px; color: #999; font-size: 0.85em;'>
-                    {f" PDF: {test.get('pdf_questions_count', 0)} | " if test.get('pdf_questions_count', 0) > 0 else ""}
-                    {f" Prompt: {test.get('prompt_questions_count', 0)} | " if test.get('prompt_questions_count', 0) > 0 else ""}
-                     Internet: {test.get('internet_questions_count', 0)}
+                    Breakdown: {meta_str}
                 </div>
             </div>
         """, unsafe_allow_html=True)
         
         # Expandable details
-        with st.expander(f"ï View Details - {test.get('topic', 'Quiz')}", expanded=False):
+        with st.expander(f"👁️ View Details - {test.get('topic', 'Quiz')}", expanded=False):
             questions = test.get("questions", [])
+            last_rendered_passage_id = None
             for q in questions:
-                icon = "" if q.get("is_correct") else ""
-                source_label = "" if q.get("source") == "pdf" else ""
+                source = q.get("source", "unknown")
+                if source == "pdf":
+                    source_label = "PDF"
+                elif source == "internet":
+                    source_label = "Internet"
+                elif source == "english_comprehension":
+                    source_label = "Reading Comprehension"
+                else:
+                    source_label = "Topic"
+                
+                # Display reading comprehension passage once per unique passage
+                passage_id = q.get("passage_id")
+                if passage_id and passage_id != last_rendered_passage_id:
+                    st.markdown(f"""
+                        <div style='background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); 
+                                    padding: 1.2rem; border-radius: 10px; border-left: 5px solid #38ef7d; margin-bottom: 1rem;
+                                    margin-top: 1rem; line-height: 1.6; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); color: #fff;'>
+                             <strong>📖 Reading Passage {passage_id}:</strong><br><br>
+                             {q.get('passage', '')}
+                        </div>
+                    """, unsafe_allow_html=True)
+                    last_rendered_passage_id = passage_id
+                
+                icon = "✅" if q.get("is_correct") else "❌"
                 st.markdown(f"**{icon} Q{q.get('number', '?')}** [{source_label}]: {q.get('question', '')}")
                 st.markdown(f"  Your answer: **{q.get('user_answer', 'N/A')}**")
                 if not q.get("is_correct"):
@@ -1172,14 +1226,20 @@ def display_saved_tests(exam_type="all"):
             # Retake button
             if st.button(" Retake This Quiz", key=f"retake_{test.get('test_id', 'test')}", use_container_width=True):
                 # Convert back to session mcqs format
-                st.session_state.mcqs = [
-                    {
+                retake_mcqs = []
+                for q in test.get("questions", []):
+                    mcq_item = {
                         "question": q["question"],
                         "options": q["options"],
                         "correct_answer": q["correct_answer"],
                         "source": q.get("source", "unknown")
-                    } for q in test.get("questions", [])
-                ]
+                    }
+                    if "passage" in q:
+                        mcq_item["passage"] = q["passage"]
+                    if "passage_id" in q:
+                        mcq_item["passage_id"] = q["passage_id"]
+                    retake_mcqs.append(mcq_item)
+                st.session_state.mcqs = retake_mcqs
                 
                 # Reset attempt state
                 st.session_state.user_answers = {}
@@ -1616,6 +1676,19 @@ def display_10th_exam():
                 st.markdown("<h3>Quiz Settings</h3>", unsafe_allow_html=True)
                 total_q = st.number_input("Total Questions", min_value=1, max_value=50, value=20, key="eng_total")
                 
+                num_passages = 2
+                questions_per_passage = 5
+                if exam_type == "Board Pattern Mock (Comprehension + Literature)":
+                    col_p1, col_p2 = st.columns(2)
+                    with col_p1:
+                        num_passages = st.number_input("Number of Passages", min_value=1, max_value=5, value=2, key="eng_passages")
+                    with col_p2:
+                        questions_per_passage = st.number_input("Questions per Passage", min_value=2, max_value=10, value=5, key="eng_q_per_passage")
+                    
+                    comp_total = num_passages * questions_per_passage
+                    lit_total_needed = max(0, total_q - comp_total)
+                    st.info(f"📋 **Exam Composition:** {comp_total} Reading Comprehension MCQs ({num_passages} passages × {questions_per_passage} questions) + {lit_total_needed} Literature/Grammar MCQs.")
+                
                 # Image uploader for matching photo paper
                 st.markdown("<h3>Photo of Previous Exam Paper (Optional)</h3>", unsafe_allow_html=True)
                 uploaded_photo = st.file_uploader(
@@ -1642,7 +1715,10 @@ def display_10th_exam():
                             # Handle Board Pattern Mock (Comprehension + Literature)
                             if exam_type == "Board Pattern Mock (Comprehension + Literature)":
                                 from utils import generate_english_comprehension_mcqs
-                                comp_mcqs = generate_english_comprehension_mcqs(num_passages=2, questions_per_passage=5)
+                                comp_mcqs = generate_english_comprehension_mcqs(
+                                    num_passages=num_passages, 
+                                    questions_per_passage=questions_per_passage
+                                )
                                 
                                 lit_count = max(0, total_q - len(comp_mcqs))
                                 if lit_count > 0:

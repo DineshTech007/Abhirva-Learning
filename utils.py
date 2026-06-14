@@ -808,6 +808,7 @@ def save_test(test_data: dict) -> str:
         "pdf_questions_count": sum(1 for q in test_data.get("mcqs", []) if q.get("source") == "pdf"),
         "internet_questions_count": sum(1 for q in test_data.get("mcqs", []) if q.get("source") == "internet"),
         "prompt_questions_count": sum(1 for q in test_data.get("mcqs", []) if q.get("source") == "topic_prompt"),
+        "comprehension_questions_count": sum(1 for q in test_data.get("mcqs", []) if q.get("source") == "english_comprehension"),
         "score": test_data.get("score", {}),
         "questions": []
     }
@@ -820,7 +821,7 @@ def save_test(test_data: dict) -> str:
         user_answer = user_answers.get(i, "Not answered")
         is_correct = user_answer == mcq.get("correct_answer", "")
         
-        save_data["questions"].append({
+        q_data = {
             "number": i + 1,
             "question": mcq.get("question", ""),
             "options": mcq.get("options", []),
@@ -828,7 +829,13 @@ def save_test(test_data: dict) -> str:
             "user_answer": user_answer,
             "is_correct": is_correct,
             "source": mcq.get("source", "unknown")
-        })
+        }
+        if "passage" in mcq:
+            q_data["passage"] = mcq["passage"]
+        if "passage_id" in mcq:
+            q_data["passage_id"] = mcq["passage_id"]
+            
+        save_data["questions"].append(q_data)
     
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(save_data, f, indent=2, ensure_ascii=False)
