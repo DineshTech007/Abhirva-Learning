@@ -38,7 +38,7 @@ TEST_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
 # Page configuration
 st.set_page_config(
     page_title="BrainyBee Kids Learning",
-    page_icon="assets/logo.png",
+    page_icon="assets/smiling_pointing_bee_transparent.png",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -462,29 +462,29 @@ filter: drop-shadow(0 8px 12px rgba(0,0,0,0.4));
 
 @media (max-width: 768px) {
     .header-wrapper {
-        flex-direction: row;
-        height: 120px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        flex-wrap: nowrap;
+        flex-direction: column;
+        height: auto;
+        padding-top: 20px;
+        padding-bottom: 20px;
     }
     .flying-in-container {
         position: relative;
         left: auto;
-        margin-left: -5px;
-        margin-bottom: 0px;
+        margin-left: 0;
+        margin-bottom: 15px;
+        order: -1; /* Stack bee above title */
     }
     .hovering-bee {
-        width: 160px; /* Much larger bee on mobile */
+        width: 200px; /* Massive bee on mobile! */
     }
     .logo-text-container {
-        padding: 5px 10px;
+        padding: 10px 20px;
     }
     .logo-text {
-        font-size: 26px !important; /* Shrink title to fit huge bee */
+        font-size: 32px !important;
     }
     .logo-subtext {
-        font-size: 14px !important;
+        font-size: 16px !important;
     }
 }
 </style>
