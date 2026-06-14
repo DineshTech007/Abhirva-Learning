@@ -410,77 +410,66 @@ if "default_tab_index" not in st.session_state:
 
 def display_header():
     """Display the app header with title and total stars"""
-    import base64
-    try:
-        with open("assets/cartoon_small.png", "rb") as f:
-            img_b64 = base64.b64encode(f.read()).decode()
-        img_html = '<img class="buzzing-bee" src="data:image/png;base64,' + img_b64 + '" width="100">'
-    except:
-        img_html = ""
+    
+    # Use GitHub Raw URL to absolutely guarantee it loads correctly on Streamlit Cloud
+    img_url = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/cartoon_transparent.png"
+    img_html = f'<img class="buzzing-bee" src="{img_url}" width="100">'
 
-    html_code = """
-        <style>
-        .header-wrapper {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 120px;
-            margin-bottom: 2rem;
-            margin-top: 1rem;
-        }
-        
-        .logo-text-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            text-align: center;
-            z-index: 5;
-            position: relative;
-            background: rgba(102, 126, 234, 0.1);
-            padding: 10px 30px;
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
-        }
-
-        @keyframes orbitFly {
-            0%   { transform: translate(-180px, 0px) rotate(15deg) scaleX(-1); z-index: 10; }
-            25%  { transform: translate(0px, -60px) rotate(5deg) scaleX(-1); z-index: 10; }
-            49.9%{ transform: translate(180px, 0px) rotate(-15deg) scaleX(-1); z-index: 10; }
-            50%  { transform: translate(180px, 0px) rotate(-15deg) scaleX(1); z-index: 1; }
-            75%  { transform: translate(0px, 40px) rotate(-5deg) scaleX(1); z-index: 1; }
-            99.9%{ transform: translate(-180px, 0px) rotate(15deg) scaleX(1); z-index: 1; }
-            100% { transform: translate(-180px, 0px) rotate(15deg) scaleX(-1); z-index: 10; }
-        }
-        
-        @keyframes buzzFlap {
-            0% { transform: rotate(-3deg) translateY(-2px); }
-            50% { transform: rotate(3deg) translateY(2px); }
-            100% { transform: rotate(-3deg) translateY(-2px); }
-        }
-
-        .orbiting-bee-container {
-            position: absolute;
-            animation: orbitFly 5s linear infinite;
-        }
-        
-        .buzzing-bee {
-            animation: buzzFlap 0.1s ease-in-out infinite;
-            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.4));
-        }
-        </style>
-        
-        <div class="header-wrapper">
-            <div class="logo-text-container">
-                <div class="logo-text" style="line-height: 1.1; margin:0;">BrainyBee</div>
-                <div class="logo-subtext" style="margin-top: 0;">Kids Learning</div>
-            </div>
-            
-            <div class="orbiting-bee-container">
-                """ + img_html + """
-            </div>
-        </div>
-    """
+    html_code = """<style>
+.header-wrapper {
+position: relative;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 120px;
+margin-bottom: 2rem;
+margin-top: 1rem;
+}
+.logo-text-container {
+display: flex;
+flex-direction: column;
+justify-content: center;
+text-align: center;
+z-index: 5;
+position: relative;
+background: rgba(102, 126, 234, 0.1);
+padding: 10px 30px;
+border-radius: 20px;
+backdrop-filter: blur(5px);
+}
+@keyframes orbitFly {
+0%   { transform: translate(-180px, 0px) rotate(15deg) scaleX(-1); z-index: 10; }
+25%  { transform: translate(0px, -60px) rotate(5deg) scaleX(-1); z-index: 10; }
+49.9%{ transform: translate(180px, 0px) rotate(-15deg) scaleX(-1); z-index: 10; }
+50%  { transform: translate(180px, 0px) rotate(-15deg) scaleX(1); z-index: 1; }
+75%  { transform: translate(0px, 40px) rotate(-5deg) scaleX(1); z-index: 1; }
+99.9%{ transform: translate(-180px, 0px) rotate(15deg) scaleX(1); z-index: 1; }
+100% { transform: translate(-180px, 0px) rotate(15deg) scaleX(-1); z-index: 10; }
+}
+@keyframes buzzFlap {
+0% { transform: rotate(-3deg) translateY(-2px); }
+50% { transform: rotate(3deg) translateY(2px); }
+100% { transform: rotate(-3deg) translateY(-2px); }
+}
+.orbiting-bee-container {
+position: absolute;
+animation: orbitFly 5s linear infinite;
+}
+.buzzing-bee {
+animation: buzzFlap 0.1s ease-in-out infinite;
+filter: drop-shadow(0 8px 12px rgba(0,0,0,0.4));
+}
+</style>
+<div class="header-wrapper">
+<div class="logo-text-container">
+<div class="logo-text" style="line-height: 1.1; margin:0;">BrainyBee</div>
+<div class="logo-subtext" style="margin-top: 0;">Kids Learning</div>
+</div>
+<div class="orbiting-bee-container">
+""" + img_html + """
+</div>
+</div>
+"""
     st.markdown(html_code, unsafe_allow_html=True)
 
     
