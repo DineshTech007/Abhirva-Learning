@@ -209,7 +209,7 @@ def generate_mcqs_from_pdf_text(text: str, topic: str = "", num_questions: int =
     
     all_mcqs = []
     questions_remaining = num_questions
-    batch_size = 10
+    batch_size = max(10, num_questions)
     
     previous_questions_text = ""
     
@@ -374,7 +374,7 @@ def generate_mcqs_from_internet(topic: str, num_questions: int = 10, level: str 
     
     all_mcqs = []
     questions_remaining = num_questions
-    batch_size = 10
+    batch_size = max(10, num_questions)
     
     previous_questions_text = ""
     
