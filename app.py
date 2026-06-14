@@ -436,67 +436,7 @@ def display_header():
     """
     components.html(js_code, height=0, width=0)
     
-    top_col1, top_col2 = st.columns([5, 2])
-    
-    install_html = f"""
-    <div id="custom-install-btn-wrapper" style="display:flex; justify-content:flex-end;">
-        <button id="custom-install-btn" style="
-            display: flex; align-items: center; justify-content: center;
-            background: #ffffff; border: 1px solid #e0e0e0; border-radius: 20px; 
-            padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 14px; color: #333;
-        ">
-            <img src="{icon_url}" style="height: 24px; margin-right: 8px;"> 
-            Install App
-        </button>
-    </div>
-    
-    <div id="inst-over" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999998;"></div>
-    <div id="inst-mod" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:15px; z-index:9999999; box-shadow:0 10px 30px rgba(0,0,0,0.2); width:85%; max-width:320px; font-family:'Outfit', sans-serif;">
-        <h3 style="margin-top:0;">📱 Get BrainyBee!</h3>
-        <p style="margin-bottom:5px; color:#666;">Your device requires a manual step:</p>
-        <p style="margin-bottom:5px;"><b>iPhone (Safari):</b></p>
-        <p style="margin-top:0; font-size:14px;">1. Tap the Share square with arrow.<br>2. Tap 'Add to Home Screen'.</p>
-        <p style="margin-bottom:5px;"><b>Android (Chrome):</b></p>
-        <p style="margin-top:0; font-size:14px;">1. Tap Menu (three dots).<br>2. Tap 'Install app'.</p>
-        <button id="close-inst-btn" style="width:100%; padding:10px; margin-top:10px; border-radius:8px; border:none; background:#ff4b4b; color:white; font-weight:bold; cursor:pointer;">Got it!</button>
-    </div>
-    
-    <img src="dummy" style="display:none;" onerror="
-        if (!window.installScriptLoaded) {{
-            window.installScriptLoaded = true;
-            window.deferredPrompt = null;
-            window.addEventListener('beforeinstallprompt', (e) => {{ e.preventDefault(); window.deferredPrompt = e; }});
-            setTimeout(() => {{
-                const btnWrap = document.getElementById('custom-install-btn-wrapper');
-                if (window.matchMedia('(display-mode: standalone)').matches && btnWrap) {{ btnWrap.style.display = 'none'; }}
-                const btn = document.getElementById('custom-install-btn');
-                const mod = document.getElementById('inst-mod');
-                const over = document.getElementById('inst-over');
-                const closeBtn = document.getElementById('close-inst-btn');
-                if (btn) {{
-                    btn.addEventListener('click', async () => {{
-                        if (window.deferredPrompt) {{
-                            window.deferredPrompt.prompt();
-                            const {{ outcome }} = await window.deferredPrompt.userChoice;
-                            window.deferredPrompt = null;
-                        }} else {{
-                            mod.style.display = 'block'; over.style.display = 'block';
-                        }}
-                    }});
-                }}
-                if (closeBtn && over) {{
-                    const closeModal = () => {{ mod.style.display = 'none'; over.style.display = 'none'; }};
-                    closeBtn.addEventListener('click', closeModal); over.addEventListener('click', closeModal);
-                }}
-            }}, 1000);
-        }}
-    ">
-    """
-    
-    with top_col2:
-        st.markdown(install_html, unsafe_allow_html=True)
-
+    # Removed custom HTML installer
     # Use GitHub Raw URL to absolutely guarantee it loads correctly on Streamlit Cloud
     img_url = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/smiling_pointing_bee_transparent.png"
     img_html = f'<img class="hovering-bee" src="{img_url}">'
@@ -1573,6 +1513,34 @@ def display_10th_exam():
 
     with sub_tab_saved:
         display_saved_tests(exam_type="10th")
+        
+    st.divider()
+    
+    @st.dialog("📱 Get BrainyBee!")
+    def install_popup():
+        st.markdown("""
+        **Get BrainyBee on your home screen for the best experience!**
+        
+        **📱 iPhone/iPad (Safari)**
+        1. Tap the **Share** square with an arrow at the bottom.
+        2. Scroll down and tap **Add to Home Screen**.
+        
+        **🤖 Android (Chrome)**
+        1. Tap the **Menu** (three dots) at the top right.
+        2. Tap **Add to Home screen** or **Install app**.
+        """)
+        if st.button("Got it!", use_container_width=True):
+            st.session_state.show_install_popup = False
+            st.rerun()
+
+    if getattr(st.session_state, 'show_install_popup', False):
+        install_popup()
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🐝 Install App to Home Screen", use_container_width=True):
+            st.session_state.show_install_popup = True
+            st.rerun()
 
 def main():
     """Main application logic"""
