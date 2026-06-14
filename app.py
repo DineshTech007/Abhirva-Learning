@@ -362,6 +362,31 @@ st.markdown("""
         from { opacity: 0; transform: translateY(-5px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* ===== iPad / Tablet responsive (768px - 1024px) ===== */
+    @media screen and (min-width: 768px) and (max-width: 1100px) {
+        .block-container { max-width: 95% !important; padding: 1.5rem 2rem !important; }
+        .logo-text { font-size: 3rem; }
+        h1 { font-size: 2.5em; }
+        h2 { font-size: 1.8em; }
+        .question-card { padding: 1.8rem; }
+        [data-testid="stSidebar"] { min-width: 280px !important; }
+    }
+
+    /* ===== Mobile responsive (< 768px) ===== */
+    @media screen and (max-width: 767px) {
+        .block-container { max-width: 100% !important; padding: 1rem 0.5rem !important; }
+        .logo-text { font-size: 2.2rem; }
+        .logo-subtext { font-size: 0.95rem; letter-spacing: 2px; }
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.1em; }
+        .question-card { padding: 1rem; }
+        .hovering-bee { width: 90px !important; }
+        .result-box { padding: 1.5rem; }
+        .score-text { font-size: 1.5em; }
+        .star-display { font-size: 2em; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -414,24 +439,44 @@ def display_header():
     
     icon_url = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/smiling_pointing_bee_transparent.png"
     
-    # Inject JS to override Streamlit's native PWA icons for Mobile Add to Home Screen
+    # Inject Apple PWA meta tags and icon overrides for iPad/iPhone Add to Home Screen
     js_code = f"""
     <script>
         const iconUrl = "{icon_url}";
         const parentDoc = window.parent.document;
-        
+
+        // Remove Streamlit's default manifest
         const manifest = parentDoc.querySelector("link[rel='manifest']");
         if (manifest) {{ manifest.remove(); }}
-        
+
+        // Override all icon links
         const links = parentDoc.querySelectorAll("link[rel*='icon'], link[rel='apple-touch-icon']");
         links.forEach(link => {{ link.href = iconUrl; }});
-        
+
+        // Add apple-touch-icon if not present
         if (!parentDoc.querySelector("link[rel='apple-touch-icon']")) {{
             const appleIcon = parentDoc.createElement("link");
             appleIcon.rel = "apple-touch-icon";
             appleIcon.href = iconUrl;
             parentDoc.head.appendChild(appleIcon);
         }}
+
+        // Add Apple PWA meta tags for iPad/iPhone
+        const appleMetaTags = [
+            {{ name: 'apple-mobile-web-app-capable', content: 'yes' }},
+            {{ name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }},
+            {{ name: 'apple-mobile-web-app-title', content: 'BrainyBee' }},
+            {{ name: 'mobile-web-app-capable', content: 'yes' }},
+            {{ name: 'application-name', content: 'BrainyBee' }},
+        ];
+        appleMetaTags.forEach(tag => {{
+            if (!parentDoc.querySelector(`meta[name='${{tag.name}}']`)) {{
+                const meta = parentDoc.createElement('meta');
+                meta.name = tag.name;
+                meta.content = tag.content;
+                parentDoc.head.appendChild(meta);
+            }}
+        }});
     </script>
     """
     components.html(js_code, height=0, width=0)
