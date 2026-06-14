@@ -1866,9 +1866,16 @@ def main():
     
     # Sidebar for API key check and info
     with st.sidebar:
-        if not os.getenv("GEMINI_API_KEY"):
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            try:
+                api_key = st.secrets["GEMINI_API_KEY"]
+            except Exception:
+                pass
+                
+        if not api_key:
             st.error("Gemini API key not found!")
-            st.info("Please add your API key to the .env file")
+            st.info("Please add your API key to the .env file or Streamlit Secrets")
             return
         else:
             st.success("API Key loaded")
