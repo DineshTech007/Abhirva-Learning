@@ -1127,10 +1127,44 @@ def display_auth_page():
     install_btn_html = """
     <div id="auth-install-wrapper" style="display:flex; justify-content:center; margin-bottom:20px;">
         <button id="auth-install-btn" style="background:#ff4b4b; color:white; border:none; border-radius:8px; padding:12px 32px; font-size:15px; font-weight:bold; cursor:pointer;">
-            🐝 Install App
+            &#x1F41D; Install App
         </button>
     </div>
-    <img src="dummy" style="display:none;" onerror="if(!window.authInstallLoaded){window.authInstallLoaded=true;window.deferredPrompt=null;window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();window.deferredPrompt=e;});setTimeout(()=>{const wrapper=document.getElementById('auth-install-wrapper');if(window.matchMedia('(display-mode: standalone)').matches&&wrapper){wrapper.style.display='none';}const btn=document.getElementById('auth-install-btn');if(btn){btn.addEventListener('click',async()=>{if(window.deferredPrompt){window.deferredPrompt.prompt();const{outcome}=await window.deferredPrompt.userChoice;window.deferredPrompt=null;}else{const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);if(isIOS){alert('On iPhone/iPad (Safari):\\n1. Tap the Share icon at the bottom.\\n2. Tap Add to Home Screen.');}else{alert('On Android (Chrome):\\n1. Tap Menu (three dots) at top right.\\n2. Tap Install app.');}}});}},500);}">
+    <img src="x" style="display:none;" onerror="
+        (function() {
+            var topWin = window.top || window.parent || window;
+            if (!topWin._brainybeeInstallReady) {
+                topWin._brainybeeInstallReady = true;
+                topWin._deferredInstall = null;
+                topWin.addEventListener('beforeinstallprompt', function(e) {
+                    e.preventDefault();
+                    topWin._deferredInstall = e;
+                });
+            }
+            var btn = document.getElementById('auth-install-btn');
+            var wrapper = document.getElementById('auth-install-wrapper');
+            if (topWin.matchMedia('(display-mode: standalone)').matches && wrapper) {
+                wrapper.style.display = 'none';
+            }
+            if (btn) {
+                btn.onclick = async function() {
+                    if (topWin._deferredInstall) {
+                        topWin._deferredInstall.prompt();
+                        await topWin._deferredInstall.userChoice;
+                        topWin._deferredInstall = null;
+                    } else {
+                        var ua = navigator.userAgent;
+                        var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                        if (isIOS) {
+                            alert('On iPhone/iPad (Safari):\n1. Tap the Share icon at the bottom.\n2. Tap Add to Home Screen.');
+                        } else {
+                            alert('On Android (Chrome):\n1. Tap the 3-dot Menu at top right.\n2. Tap Install app or Add to Home screen.');
+                        }
+                    }
+                };
+            }
+        })();
+    ">
     """
     st.markdown(install_btn_html, unsafe_allow_html=True)
 
