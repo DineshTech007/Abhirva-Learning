@@ -38,27 +38,21 @@ TEST_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
 
 # Page configuration
 st.set_page_config(
-    page_title="BrainyBee Kids Learning",
-    page_icon="assets/smiling_pointing_bee_transparent.png",
+    page_title="BrainyBee",
+    page_icon="https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/static/icon-192.png",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
 # Override Streamlit's manifest and icons immediately in the main document
 st.markdown("""
-    <link rel="manifest" href="/app/static/manifest.json">
-    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/smiling_pointing_bee_transparent.png">
+    <link rel="manifest" href="https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/static/manifest.json" crossorigin="anonymous">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/static/icon-192.png">
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/static/icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BrainyBee">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#667eea">
-    <script>
-        // Remove Streamlit's built-in manifest and replace with ours
-        document.querySelectorAll("link[rel='manifest']").forEach(function(el, i) {
-            if (i === 0) { el.href = '/app/static/manifest.json'; }
-            else { el.remove(); }
-        });
-    </script>
 """, unsafe_allow_html=True)
 
 # Custom CSS for kid-friendly styling
@@ -461,53 +455,66 @@ def display_header():
     js_code = f"""
     <script>
         const iconUrl = "{icon_url}";
-        const parentDoc = window.parent.document;
-        const parentWin = window.parent;
+        const manifestUrl = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/static/manifest.json";
 
-        // Register BrainyBee service worker to intercept manifest at network level
-        if ('serviceWorker' in parentWin.navigator) {{
-            parentWin.navigator.serviceWorker.register('/app/static/sw.js', {{scope: '/'}}).catch(function(){{}});
-        }}
-
-        // Replace Streamlit's manifest with our custom BrainyBee manifest
-        const existingManifest = parentDoc.querySelector("link[rel='manifest']");
-        if (existingManifest) {{
-            existingManifest.href = '/app/static/manifest.json';
-        }} else {{
-            const newManifest = parentDoc.createElement('link');
-            newManifest.rel = 'manifest';
-            newManifest.href = '/app/static/manifest.json';
-            parentDoc.head.appendChild(newManifest);
-        }}
-
-        // Override all icon links with BrainyBee icon
-        const links = parentDoc.querySelectorAll("link[rel*='icon'], link[rel='apple-touch-icon']");
-        links.forEach(link => {{ link.href = iconUrl; }});
-
-        // Add apple-touch-icon if not present
-        if (!parentDoc.querySelector("link[rel='apple-touch-icon']")) {{
-            const appleIcon = parentDoc.createElement("link");
-            appleIcon.rel = "apple-touch-icon";
-            appleIcon.href = iconUrl;
-            parentDoc.head.appendChild(appleIcon);
-        }}
-
-        // Add Apple PWA meta tags for iPad/iPhone
-        const appleMetaTags = [
-            {{ name: 'apple-mobile-web-app-capable', content: 'yes' }},
-            {{ name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }},
-            {{ name: 'apple-mobile-web-app-title', content: 'BrainyBee' }},
-            {{ name: 'mobile-web-app-capable', content: 'yes' }},
-            {{ name: 'application-name', content: 'BrainyBee' }},
-        ];
-        appleMetaTags.forEach(tag => {{
-            if (!parentDoc.querySelector(`meta[name='${{tag.name}}']`)) {{
-                const meta = parentDoc.createElement('meta');
-                meta.name = tag.name;
-                meta.content = tag.content;
-                parentDoc.head.appendChild(meta);
+        // Try to register service worker safely
+        try {{
+            const parentWin = window.parent;
+            if ('serviceWorker' in parentWin.navigator) {{
+                parentWin.navigator.serviceWorker.register('/app/static/sw.js', {{scope: '/'}}).catch(function(e){{
+                    console.log("Service worker registration failed:", e);
+                }});
             }}
-        }});
+        }} catch (e) {{
+            console.log("Service worker registration bypass:", e);
+        }}
+
+        // Try to override parent document links/meta tags safely (if same-origin)
+        try {{
+            const parentDoc = window.parent.document;
+
+            // Replace Streamlit's manifest with our custom BrainyBee manifest
+            const existingManifest = parentDoc.querySelector("link[rel='manifest']");
+            if (existingManifest) {{
+                existingManifest.href = manifestUrl;
+            }} else {{
+                const newManifest = parentDoc.createElement('link');
+                newManifest.rel = 'manifest';
+                newManifest.href = manifestUrl;
+                parentDoc.head.appendChild(newManifest);
+            }}
+
+            // Override all icon links with BrainyBee icon
+            const links = parentDoc.querySelectorAll("link[rel*='icon'], link[rel='apple-touch-icon']");
+            links.forEach(link => {{ link.href = iconUrl; }});
+
+            // Add apple-touch-icon if not present
+            if (!parentDoc.querySelector("link[rel='apple-touch-icon']")) {{
+                const appleIcon = parentDoc.createElement("link");
+                appleIcon.rel = "apple-touch-icon";
+                appleIcon.href = iconUrl;
+                parentDoc.head.appendChild(appleIcon);
+            }}
+
+            // Add Apple PWA meta tags for iPad/iPhone
+            const appleMetaTags = [
+                {{ name: 'apple-mobile-web-app-capable', content: 'yes' }},
+                {{ name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }},
+                {{ name: 'apple-mobile-web-app-title', content: 'BrainyBee' }},
+                {{ name: 'mobile-web-app-capable', content: 'yes' }},
+                {{ name: 'application-name', content: 'BrainyBee' }},
+            ];
+            appleMetaTags.forEach(tag => {{
+                if (!parentDoc.querySelector(`meta[name='${{tag.name}}']`)) {{
+                    const meta = parentDoc.createElement('meta');
+                    meta.name = tag.name;
+                    meta.content = tag.content;
+                    parentDoc.head.appendChild(meta);
+                }}
+            }});
+        }} catch (e) {{
+            console.log("Parent DOM access bypass (expected on Streamlit Cloud due to CORS):", e);
+        }}
     </script>
     """
     components.html(js_code, height=0, width=0)
