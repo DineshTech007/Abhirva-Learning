@@ -412,7 +412,7 @@ def display_header():
     """Display the app header with title and total stars"""
     
     # Use GitHub Raw URL to absolutely guarantee it loads correctly on Streamlit Cloud
-    img_url = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/pointing_bee_transparent.png"
+    img_url = "https://raw.githubusercontent.com/DineshTech007/BrainyBeeQuiz/main/assets/flying_pointing_bee_transparent.png"
     img_html = f'<img class="hovering-bee" src="{img_url}" width="200">'
 
     html_code = """<style>
@@ -438,7 +438,7 @@ border-radius: 20px;
 backdrop-filter: blur(5px);
 }
 @keyframes flyInRight {
-0% { transform: translate(100vw, -150px) rotate(-35deg) scale(0.5); opacity: 0; }
+0% { transform: translate(100vw, -100px) rotate(-15deg) scale(0.8); opacity: 0; }
 100% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
 }
 @keyframes hoverSmooth {
@@ -447,7 +447,7 @@ backdrop-filter: blur(5px);
 100% { transform: translateY(-5px); }
 }
 .flying-in-container {
-animation: flyInRight 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+animation: flyInRight 4.5s ease-out forwards;
 margin-left: 20px;
 }
 .hovering-bee {
