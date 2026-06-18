@@ -31,7 +31,7 @@ function BookLibrary() {
       .then(res => res.json())
       .then(data => {
         if (data.status === "success" && Array.isArray(data.subscriptions)) {
-          const hasLibrary = data.subscriptions.some(s => s.name.toLowerCase().includes("library"));
+          const hasLibrary = data.subscriptions.some((s: any) => s.name.toLowerCase().includes("library"));
           setHasAccess(hasLibrary);
         }
       })
