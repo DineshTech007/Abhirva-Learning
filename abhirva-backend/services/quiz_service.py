@@ -24,6 +24,7 @@ def get_quiz_from_db(board: str, grade: str, subject: str, chapter: str) -> dict
         if response.data and len(response.data) > 0:
             existing_quiz = response.data[0]
             if existing_quiz.get("questions") and len(existing_quiz["questions"]) > 0:
+                existing_quiz["quiz_id"] = existing_quiz["id"]
                 print("[SUCCESS] Quiz found in database.")
                 return existing_quiz
                 
