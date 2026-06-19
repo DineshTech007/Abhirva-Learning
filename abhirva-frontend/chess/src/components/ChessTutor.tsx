@@ -218,6 +218,32 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
         return;
       }
       const chess = new Chess(fenToEval === 'start' ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' : fenToEval);
+      const isBlackTurn = chess.turn() === 'b';
+      
+      // Fix eval relative to absolute white/black advantage
+      const adjustedEval = isBlackTurn ? -analysis.eval : analysis.eval;
+      setDeviationEval(adjustedEval);
+
+      // Convert Top Moves UCI to SAN
+      const mappedTopMoves = analysis.topMoves.map(tm => {
+        try {
+          const moveObj = chess.move({
+            from: tm.move.substring(0, 2),
+            to: tm.move.substring(2, 4),
+            promotion: tm.move.length > 4 ? tm.move[4] : undefined
+          });
+          chess.undo();
+          const moveEval = isBlackTurn ? -tm.eval : tm.eval;
+          const moveMate = isBlackTurn && tm.mate !== null ? -tm.mate : tm.mate;
+          return { ...tm, san: moveObj ? moveObj.san : tm.move, eval: moveEval, mate: moveMate };
+        } catch (e) {
+          const moveEval = isBlackTurn ? -tm.eval : tm.eval;
+          const moveMate = isBlackTurn && tm.mate !== null ? -tm.mate : tm.mate;
+          return { ...tm, san: tm.move, eval: moveEval, mate: moveMate };
+        }
+      });
+      setTopMoves(mappedTopMoves);
+      
       try {
         // Stockfish returns UCI format (e2e4), convert to {from, to}
         const from = analysis.bestMove.substring(0, 2);
@@ -313,9 +339,29 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
         setDeviationCoachText('Stockfish is evaluating your move...');
         
         engine.analyzePosition(newFen, 12).then((analysis: EngineAnalysis) => {
-          const score = analysis.eval;
+          const isBlackTurn = chess.turn() === 'b';
+          const score = isBlackTurn ? -analysis.eval : analysis.eval;
           setDeviationEval(score);
-          setTopMoves(analysis.topMoves);
+
+          // Convert Top Moves UCI to SAN
+          const mappedTopMoves = analysis.topMoves.map(tm => {
+            try {
+              const moveObj = chess.move({
+                from: tm.move.substring(0, 2),
+                to: tm.move.substring(2, 4),
+                promotion: tm.move.length > 4 ? tm.move[4] : undefined
+              });
+              chess.undo();
+              const moveEval = isBlackTurn ? -tm.eval : tm.eval;
+              const moveMate = isBlackTurn && tm.mate !== null ? -tm.mate : tm.mate;
+              return { ...tm, san: moveObj ? moveObj.san : tm.move, eval: moveEval, mate: moveMate };
+            } catch (e) {
+              const moveEval = isBlackTurn ? -tm.eval : tm.eval;
+              const moveMate = isBlackTurn && tm.mate !== null ? -tm.mate : tm.mate;
+              return { ...tm, san: tm.move, eval: moveEval, mate: moveMate };
+            }
+          });
+          setTopMoves(mappedTopMoves);
           
           // Call backend for Gemini coaching
           fetch('/api/chess/dynamic-coach', {
@@ -440,57 +486,6 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
           </div>
         </div>
 
-        {/* Mode Toggles & Top Moves — RIGHT BELOW the board */}
-        <div className="w-full max-w-[600px] mt-3 flex flex-col gap-2">
-          {/* Toggles */}
-          <div className="flex justify-between items-center bg-gray-900 text-white p-2 rounded-xl shadow">
-            <label className="flex items-center gap-2 cursor-pointer font-semibold text-sm">
-              <input type="checkbox" className="w-4 h-4 rounded accent-indigo-400" checked={isExploreMode} onChange={toggleExploreMode} />
-              🔍 Explore
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold text-sm">
-              <input type="checkbox" className="w-4 h-4 rounded accent-rose-400" checked={playEngineMode} onChange={toggleEngineMode} />
-              🤖 Play Stockfish
-            </label>
-            {isDeviating && (
-              <button
-                onClick={handleTakeBack}
-                disabled={moveHistory.length === 0}
-                className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-gray-900 rounded-lg font-bold text-sm disabled:opacity-40 transition-all"
-              >
-                ↩ Take Back
-              </button>
-            )}
-          </div>
-
-          {/* Position search feedback */}
-          {isExploreMode && isDeviating && matchingVariationIndices.length === 0 && (
-            <div className="p-2 text-xs font-semibold text-rose-400 bg-rose-950/50 rounded-lg border border-rose-800">
-              No book variations match this position.
-            </div>
-          )}
-
-          {/* Top 3 Moves */}
-          {isDeviating && topMoves.length > 0 && (
-            <div className="bg-gray-900 rounded-xl p-3 border border-gray-700">
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Engine Top Moves</h4>
-              <div className="flex gap-2">
-                {topMoves.map((tm: any, i: number) => (
-                  <div key={i} className="flex-1 bg-gray-800 rounded-lg p-2 flex flex-col items-center gap-1">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${i === 0 ? 'bg-emerald-500 text-white' : i === 1 ? 'bg-amber-400 text-gray-900' : 'bg-gray-600 text-gray-300'}`}>
-                      {i + 1}
-                    </span>
-                    <span className="font-mono font-bold text-white text-sm">{tm.move}</span>
-                    <span className={`font-mono text-xs ${tm.eval > 0 ? 'text-emerald-400' : tm.eval < 0 ? 'text-rose-400' : 'text-gray-400'}`}>
-                      {tm.mate !== null ? `M${Math.abs(tm.mate)}` : (tm.eval > 0 ? '+' : '') + tm.eval.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Step indicator */}
         <div className="text-xs text-gray-400 mt-2 flex items-center gap-3">
           <span>Move {currentStep + 1}/{moves.length}</span>
@@ -566,6 +561,57 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
           >
             🔊 {audioSpeed}x
           </button>
+        </div>
+
+        {/* Mode Toggles & Top Moves — MOVED TO RIGHT COLUMN */}
+        <div className="w-full flex flex-col gap-3">
+          {/* Toggles */}
+          <div className="flex justify-between items-center bg-gray-900 text-white p-3 rounded-2xl shadow-md border border-gray-800">
+            <label className="flex items-center gap-2 cursor-pointer font-semibold text-sm">
+              <input type="checkbox" className="w-4 h-4 rounded accent-indigo-400" checked={isExploreMode} onChange={toggleExploreMode} />
+              🔍 Explore
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer font-semibold text-sm">
+              <input type="checkbox" className="w-4 h-4 rounded accent-rose-400" checked={playEngineMode} onChange={toggleEngineMode} />
+              🤖 Play Stockfish
+            </label>
+            {isDeviating && (
+              <button
+                onClick={handleTakeBack}
+                disabled={moveHistory.length === 0}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-gray-900 rounded-lg font-bold text-sm disabled:opacity-40 transition-all"
+              >
+                ↩ Take Back
+              </button>
+            )}
+          </div>
+
+          {/* Position search feedback */}
+          {isExploreMode && isDeviating && matchingVariationIndices.length === 0 && (
+            <div className="p-3 text-sm font-semibold text-rose-400 bg-rose-950/50 rounded-xl border border-rose-800">
+              No book variations match this position.
+            </div>
+          )}
+
+          {/* Top 3 Moves */}
+          {isDeviating && topMoves.length > 0 && (
+            <div className="bg-gray-900 rounded-2xl p-4 border border-gray-700 shadow-md">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Engine Top Moves</h4>
+              <div className="flex gap-3">
+                {topMoves.map((tm: any, i: number) => (
+                  <div key={i} className="flex-1 bg-gray-800 rounded-xl p-3 flex flex-col items-center gap-1.5 border border-gray-700">
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black shadow-sm ${i === 0 ? 'bg-emerald-500 text-white' : i === 1 ? 'bg-amber-400 text-gray-900' : 'bg-gray-600 text-white'}`}>
+                      {i + 1}
+                    </span>
+                    <span className="font-mono font-bold text-white text-lg">{tm.san || tm.move}</span>
+                    <span className={`font-mono text-sm font-bold ${tm.eval > 0 ? 'text-emerald-400' : tm.eval < 0 ? 'text-rose-400' : 'text-gray-400'}`}>
+                      {tm.mate !== null ? `M${Math.abs(tm.mate)}` : (tm.eval > 0 ? '+' : '') + tm.eval.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Coach Card */}
