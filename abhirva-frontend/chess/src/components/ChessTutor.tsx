@@ -194,7 +194,7 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
       if (!bestMoveStr) return;
       const chess = new Chess(fenToEval === 'start' ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' : fenToEval);
       try {
-        const move = chess.move(bestMoveStr, { sloppy: true });
+        const move = chess.move(bestMoveStr);
         if (move) {
           const newFen = chess.fen();
           setDeviationFen(newFen);
