@@ -266,13 +266,22 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
     });
   };
 
+  const fixTranslation = (text: string) => {
+    if (!text) return text;
+    return text
+      .replace(/पांढरा|पांढऱ्या|पांढऱ्याने|सफेद/g, 'White')
+      .replace(/काळा|काळ्या|काळ्याने|काला|काले/g, 'Black')
+      .replace(/व्हाईट/g, 'White')
+      .replace(/ब्लॅक/g, 'Black');
+  };
+
   // Speak when step changes (but not on initial render for same step)
   useEffect(() => {
     if (!currentMoveData) return;
     if (currentStep === prevStepRef.current) return;
     prevStepRef.current = currentStep;
 
-    const textToSpeak = currentMoveData[`coach_text_${language}`];
+    const textToSpeak = fixTranslation(currentMoveData[`coach_text_${language}`]);
     if (textToSpeak) {
       audioEngine.speak(textToSpeak, audioSpeed);
     }
@@ -379,8 +388,9 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
           .then(data => {
             setIsEvaluating(false);
             if (data.status === 'success') {
-              setDeviationCoachText(data[`coach_${language}`] || data.coach_en);
-              audioEngine.speak(data[`coach_${language}`] || data.coach_en, audioSpeed);
+              const text = fixTranslation(data[`coach_${language}`] || data.coach_en);
+              setDeviationCoachText(text);
+              audioEngine.speak(text, audioSpeed);
             } else {
               setDeviationCoachText('Stockfish evaluates this position at ' + score.toFixed(2));
             }
@@ -448,7 +458,7 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
         {currentVariation?.[`description_${language}`] && (
           <div className="mb-4 w-full max-w-[600px] bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-600 p-3 rounded-r-2xl shadow-sm">
             <p className="text-gray-700 italic text-sm leading-relaxed">
-              &ldquo;{currentVariation[`description_${language}`]}&rdquo;
+              &ldquo;{fixTranslation(currentVariation[`description_${language}`])}&rdquo;
             </p>
           </div>
         )}
@@ -628,8 +638,8 @@ export default function ChessTutor({ syllabusData }: ChessTutorProps) {
             </div>
             <p className="text-xl text-gray-800 leading-relaxed font-semibold">
               {isDeviating 
-                ? deviationCoachText 
-                : (currentMoveData[`coach_text_${language}`] || currentMoveData.coach_text_en || 'No coach text for this step.')}
+                ? fixTranslation(deviationCoachText) 
+                : fixTranslation(currentMoveData[`coach_text_${language}`] || currentMoveData.coach_text_en || 'No coach text for this step.')}
             </p>
             {isDeviating && deviationEval !== null && (
               <div className="mt-4">
