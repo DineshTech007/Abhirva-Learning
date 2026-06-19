@@ -1,0 +1,18 @@
+{
+    "10th-Maths.pdf": [
+        {"title": "Chapter 1: Real Numbers"},
+        {"title": "Chapter 2: Polynomials"},
+        {"title": "Chapter 3: Pair of Linear Equations in Two Variables"},
+        {"title": "Chapter 4: Quadratic Equations"},
+        {"title": "Chapter 5: Arithmetic Progressions"},
+        {"title": "Chapter 6: Triangles"},
+        {"title": "Chapter 7: Coordinate Geometry"},
+        {"title": "Chapter 8: Introduction to Trigonometry"},
+        {"title": "Chapter 9: Some Applications of Trigonometry"},
+        {"title": "Chapter 10: Circles"},
+        {"title": "Chapter 11: Areas Related to Circles"},
+        {"title": "Chapter 12: Surface Areas and Volumes"},
+        {"title": "Chapter 13: Statistics"},
+        {"title": "Chapter 14: Probability"}
+    ]
+}

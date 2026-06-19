@@ -1,0 +1,51 @@
+{
+    "2026MarathiQuestionPaper.pdf": [
+        {
+            "title": "Entire Book",
+            "start_page": 1,
+            "end_page": 8
+        }
+    ],
+    "AksharBharti.pdf": [
+        {
+            "title": "Entire Book",
+            "start_page": 1,
+            "end_page": 20
+        }
+    ],
+    "chapter1.pdf": [
+        {
+            "title": "Entire Book",
+            "start_page": 1,
+            "end_page": 5
+        }
+    ],
+    "chapter2.pdf": [
+        {
+            "title": "Entire Book",
+            "start_page": 1,
+            "end_page": 8
+        }
+    ],
+    "chapter3.pdf": [
+        {
+            "title": "Entire Book",
+            "start_page": 1,
+            "end_page": 12
+        }
+    ],
+    "chapter4.pdf": [
+        {
+            "title": "Entire Book",
+            "start_page": 1,
+            "end_page": 2
+        }
+    ],
+    "marathi-grammer.pdf": [
+        {
+            "title": "Entire Book",
+            "start_page": 1,
+            "end_page": 20
+        }
+    ]
+}
