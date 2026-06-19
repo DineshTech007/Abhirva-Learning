@@ -13,6 +13,9 @@ const SUBJECTS = [
   { name: "Marathi", emoji: "📜" },
   { name: "Computers", emoji: "💻" },
   { name: "IMO Test", emoji: "🏆" },
+  { name: "NSO Test", emoji: "🧪" },
+  { name: "SOF Test", emoji: "🛡️" },
+  { name: "IEO Test", emoji: "🏅" },
 ];
 
 const BACKEND_URL = process.env.NODE_ENV === "production" ? "https://abhirva-backend.onrender.com" : "http://127.0.0.1:8000";
@@ -75,10 +78,19 @@ function StudentDashboardContent() {
   const hasChessAccess = hasAccess("chess");
   const has10thClassAccess = profile?.grade === "Grade 10" || hasAccess("10th Board") || hasAccess("10th Class") || hasAccess("10th Grade");
   const hasIMOTestAccess = hasAccess("IMO");
+  const hasNSOTestAccess = hasAccess("NSO") || hasAccess("SOF") || hasAccess("Science Olympiad") || hasIMOTestAccess;
+  const hasSOFTestAccess = hasAccess("SOF") || hasAccess("NSO") || hasAccess("Science Olympiad") || hasIMOTestAccess;
+  const hasIEOTestAccess = hasAccess("IEO") || hasAccess("English Olympiad") || hasIMOTestAccess;
 
   const visibleSubjects = SUBJECTS.filter(sub => {
     if (sub.name === "IMO Test") {
       return hasIMOTestAccess;
+    } else if (sub.name === "NSO Test") {
+      return hasNSOTestAccess;
+    } else if (sub.name === "SOF Test") {
+      return hasSOFTestAccess;
+    } else if (sub.name === "IEO Test") {
+      return hasIEOTestAccess;
     } else {
       return has10thClassAccess;
     }

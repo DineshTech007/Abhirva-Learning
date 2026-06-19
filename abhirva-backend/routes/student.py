@@ -68,6 +68,7 @@ class QuizRequest(BaseModel):
     subject: str
     chapter: str
     language: Optional[str] = "English"
+    num_questions: Optional[int] = None
 
 class PastPaperRequest(BaseModel):
     student_id: str
@@ -84,8 +85,13 @@ async def start_quiz(request: QuizRequest):
         # Determine the required package name based on request parameters
         if request.board == "Library":
             package_name = "Book Library"
-        elif request.subject == "IMO Test" or request.board == "IMO":
-            package_name = f"IMO {request.grade}"
+        elif request.subject in ["IMO Test", "NSO Test", "IEO Test", "SOF Test"] or request.board in ["IMO", "NSO", "IEO", "SOF"]:
+            prefix = "IMO" if "IMO" in (request.subject or request.board) else (
+                "NSO" if "NSO" in (request.subject or request.board) else (
+                    "SOF" if "SOF" in (request.subject or request.board) else "IEO"
+                )
+            )
+            package_name = f"{prefix} {request.grade}"
         else:
             # Map sub-subjects back to their master package
             sst_subs = ["History", "Geography", "Political Science", "Economics"]
@@ -138,6 +144,78 @@ async def start_quiz(request: QuizRequest):
             language=request.language,
             book_title=request.chapter
         )
+    elif request.subject in ["IMO Test", "IMO", "NSO Test", "NSO", "IEO Test", "IEO", "SOF Test", "SOF"]:
+        import random
+        num_to_pick = request.num_questions if request.num_questions else 10
+        
+        # Fallback helper to query the correct tables
+        use_olympiad_tables = True
+        quiz_table = "olympiad_quizzes"
+        question_table = "olympiad_questions"
+        fk_field = "olympiad_quiz_id"
+        
+        # Test if olympiad_quizzes table exists, fallback to quizzes/questions if not
+        try:
+            supabase_db.table("olympiad_quizzes").select("id").limit(1).execute()
+        except Exception:
+            use_olympiad_tables = False
+            quiz_table = "quizzes"
+            question_table = "questions"
+            fk_field = "quiz_id"
+
+        if "mix" in request.chapter.lower():
+            # Mix mode: get all quizzes for this grade and subject
+            quizzes_resp = supabase_db.table(quiz_table).select("id").eq("grade", request.grade).eq("subject", request.subject).execute()
+            if not quizzes_resp.data:
+                raise HTTPException(status_code=404, detail=f"No {request.subject} quizzes have been published yet for {request.grade}. Please ask your administrator.")
+            
+            quiz_ids = [q["id"] for q in quizzes_resp.data]
+            
+            # Fetch all questions for these quiz IDs
+            q_resp = supabase_db.table(question_table).select("*").in_(fk_field, quiz_ids).execute()
+            if not q_resp.data:
+                raise HTTPException(status_code=404, detail=f"No questions found for {request.subject} quizzes. Please check back later.")
+                
+            questions = q_resp.data
+            random.shuffle(questions)
+            selected_qs = questions[:num_to_pick]
+            
+            prefix_lower = "imo" if "IMO" in request.subject else (
+                "nso" if "NSO" in request.subject else (
+                    "sof" if "SOF" in request.subject else "ieo"
+                )
+            )
+            quiz_data = {
+                "quiz_id": f"{prefix_lower}-mix-quiz",
+                "board": request.board,
+                "grade": request.grade,
+                "subject": request.subject,
+                "chapter_or_topic": "Mix of all topics",
+                "questions": selected_qs
+            }
+        else:
+            # Topic-wise mode: get quiz by chapter
+            quiz_resp = supabase_db.table(quiz_table).select("id, board, grade, subject, chapter_or_topic").eq("grade", request.grade).eq("subject", request.subject).eq("chapter_or_topic", request.chapter).execute()
+            if not quiz_resp.data:
+                raise HTTPException(status_code=404, detail=f"The quiz for topic '{request.chapter}' has not been published yet.")
+                
+            quiz_row = quiz_resp.data[0]
+            q_resp = supabase_db.table(question_table).select("*").eq(fk_field, quiz_row["id"]).execute()
+            if not q_resp.data:
+                raise HTTPException(status_code=404, detail="No questions found for this topic.")
+                
+            questions = q_resp.data
+            random.shuffle(questions)
+            selected_qs = questions[:num_to_pick]
+            
+            quiz_data = {
+                "quiz_id": quiz_row["id"],
+                "board": quiz_row["board"],
+                "grade": quiz_row["grade"],
+                "subject": quiz_row["subject"],
+                "chapter_or_topic": quiz_row["chapter_or_topic"],
+                "questions": selected_qs
+            }
     else:
         quiz_data = get_quiz_from_db(
             board=request.board,

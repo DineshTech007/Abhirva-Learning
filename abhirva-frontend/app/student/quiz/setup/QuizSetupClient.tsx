@@ -3,11 +3,13 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "../quiz.module.css";
+import { useAuth } from "../../../../lib/auth-context";
 
 function QuizSetupContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const subject = searchParams.get("subject") || "Mathematics";
+  const isOlympiadTest = subject === "IMO Test" || subject === "NSO Test" || subject === "SOF Test" || subject === "IEO Test";
 
   const [examType, setExamType] = useState("Chapter-wise");
   const [sstSubSubject, setSstSubSubject] = useState("");
@@ -15,6 +17,15 @@ function QuizSetupContent() {
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [options, setOptions] = useState<string[]>([]);
   const [grade, setGrade] = useState("Grade 1");
+  const [imoMode, setImoMode] = useState("Topic-wise");
+  const [numQuestions, setNumQuestions] = useState(10);
+  const { profile } = useAuth();
+
+  useEffect(() => {
+    if (profile?.grade) {
+      setGrade(profile.grade);
+    }
+  }, [profile]);
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -68,8 +79,8 @@ function QuizSetupContent() {
     if (subject === "SST") {
       url += `&sub_subject=${encodeURIComponent(sstSubSubject)}`;
     }
-    if (subject === "IMO Test") {
-      url += `&grade=${encodeURIComponent(grade)}`;
+    if (isOlympiadTest) {
+      url += `&grade=${encodeURIComponent(grade)}&num_questions=${numQuestions}`;
     }
     router.push(url);
   };
@@ -129,42 +140,73 @@ function QuizSetupContent() {
         )}
 
         {/* Chapter/Topic Selection */}
-        {subject === "IMO Test" && (
+        {isOlympiadTest && (
           <div style={{marginBottom: '2rem'}}>
-            <label style={{display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>Select Grade</label>
+            <label style={{display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>Syllabus Mode</label>
+            <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem'}}>
+              <button 
+                type="button"
+                className={styles.optionBtn} 
+                style={{flex: 1, borderColor: imoMode === "Topic-wise" ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)'}}
+                onClick={() => {
+                  setImoMode("Topic-wise");
+                  setChapter("");
+                }}
+              >
+                Topic-wise
+              </button>
+              <button 
+                type="button"
+                className={styles.optionBtn} 
+                style={{flex: 1, borderColor: imoMode === "Mix" ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)'}}
+                onClick={() => {
+                  setImoMode("Mix");
+                  setChapter("Mix of all topics");
+                }}
+              >
+                Mix of all topics
+              </button>
+            </div>
+
+            <label style={{display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>Number of Questions</label>
             <select 
-              value={grade} 
-              onChange={(e) => setGrade(e.target.value)}
-              style={{padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", width: "100%", color: "black", marginBottom: "1rem"}}
+              value={numQuestions} 
+              onChange={(e) => setNumQuestions(Number(e.target.value))}
+              style={{padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", width: "100%", color: "black", marginBottom: "1.5rem"}}
             >
-              {[...Array(10)].map((_, i) => (
-                <option key={i} value={`Grade ${i + 1}`}>Grade {i + 1}</option>
-              ))}
+              <option value={5}>5 Questions</option>
+              <option value={10}>10 Questions</option>
+              <option value={15}>15 Questions</option>
+              <option value={20}>20 Questions</option>
+              <option value={25}>25 Questions</option>
+              <option value={30}>30 Questions</option>
             </select>
           </div>
         )}
 
-        <div style={{marginBottom: '2rem'}}>
-          <label style={{display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>Select Topic</label>
-          {loadingOptions ? (
-            <div style={{ color: "var(--text-secondary)", padding: "1rem" }}>Loading topics...</div>
-          ) : filteredOptions.length === 0 ? (
-            <div style={{ color: "var(--text-secondary)", padding: "1rem" }}>No topics found for this selection.</div>
-          ) : (
-            <select
-              value={chapter}
-              onChange={(e) => setChapter(e.target.value)}
-              style={{padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", width: "100%", color: "black"}}
-            >
-              <option value="">-- Select a Topic --</option>
-              {filteredOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt.replace("Grammar: ", "")}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        {!(isOlympiadTest && imoMode === "Mix") && (
+          <div style={{marginBottom: '2rem'}}>
+            <label style={{display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>Select Topic</label>
+            {loadingOptions ? (
+              <div style={{ color: "var(--text-secondary)", padding: "1rem" }}>Loading topics...</div>
+            ) : filteredOptions.length === 0 ? (
+              <div style={{ color: "var(--text-secondary)", padding: "1rem" }}>No topics found for this selection.</div>
+            ) : (
+              <select
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value)}
+                style={{padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", width: "100%", color: "black"}}
+              >
+                <option value="">-- Select a Topic --</option>
+                {filteredOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt.replace("Grammar: ", "")}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
 
       </div>
 

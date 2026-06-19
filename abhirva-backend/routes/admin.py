@@ -44,9 +44,13 @@ async def get_topics(subject: str = None, category: str = "10th Class", sst_sub_
     Fetches available topics for a given subject and category.
     """
     try:
-        if category == "IMO Test":
+        if category == "IMO Test" or subject == "IMO Test":
             # Return hardcoded IMO categories
             return {"status": "success", "topics": ["Logical Reasoning", "Mathematical Reasoning", "Everyday Mathematics", "Achievers Section"]}
+        elif category in ["NSO Test", "SOF Test"] or subject in ["NSO Test", "SOF Test"]:
+            return {"status": "success", "topics": ["Logical Reasoning", "Science", "Achievers Section"]}
+        elif category == "IEO Test" or subject == "IEO Test":
+            return {"status": "success", "topics": ["Word and Structure Knowledge", "Reading", "Spoken and Written Expression", "Achievers Section"]}
         
         if not subject:
             return {"status": "success", "topics": []}
